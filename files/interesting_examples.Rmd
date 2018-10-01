@@ -19,7 +19,7 @@ rmarkdown::render("/home/baydogan/Courses/IE582/Fall18/Guidelines/example_homewo
 2.Read Data
 ```{r eval=TRUE}
 df = read.csv('/Users/ilkerkurtulus/Documents/cse-master/ie582/data/train.csv')
-library(stringr)
+library(stringr)k
 x = str_split_fixed(df$Name, ", ", 2)
 y = str_split_fixed(x[,2], ". ", 2)
 df["title"] = y[,1]
