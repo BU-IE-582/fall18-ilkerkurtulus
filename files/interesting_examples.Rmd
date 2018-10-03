@@ -20,7 +20,7 @@ To do that one option is the following:
 ```{r eval=TRUE,echo=TRUE}
 library(stringr)
 df = read.csv("https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/train.csv")
-knitr::asis_output(head(df))
+head(df)
 ```
 
 2. A basic string operation for feature engineering by using library called stringr.
