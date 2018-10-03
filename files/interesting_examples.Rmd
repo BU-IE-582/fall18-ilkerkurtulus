@@ -13,19 +13,29 @@ rmarkdown::render("/home/baydogan/Courses/IE582/Fall18/Guidelines/example_homewo
 ```
 
 
-1. While discovering titanic dataset i encountered that loading data stored in local to the github is a bit tricky.
-Example:
+1. While discovering titanic dataset i encountered that reading data stored in local to the github is a bit tricky.
+To do that one option is the following:
++ Save your data in local git directory then commit and push so that your file will be on your gitrepo.
++ Read your file from raw.githubusercontent link which can be obtained by clicking raw button in above data storage directory.
 ```{r eval=TRUE}
-# df = read.csv('/files/train.csv')
-print(getwd())
-#x = str_split_fixed(df$Name, ", ", 2)
-#y = str_split_fixed(x[,2], ". ", 2)
-#df["title"] = y[,1]
-#head(df)
+library(stringr)
+df = read.csv("https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/train.csv")
+head(df)
 ```
 
-To overcome that there is useful notebook in Kaggle:
-[google] (https://www.google.com)
-1. [Exploring Survival on the Titanic](https://www.kaggle.com/mrisdal/exploring-survival-on-the-titanic)
+2. A basic string operation for feature engineering by using library called stringr.
 
-    This example is important because it is an R Notebook on Titanic data set. Titanic is considered as one of the Data Science 101 data set and this notebook provides a good exploratory data analysis. It is also a Kaggle Kernel, which is a very good source for this kind of example R codes. The notebook also covers feature engineering, missing data imputation and modeling.
+```{r eval=TRUE}
+library(stringr)
+x = str_split_fixed(df$Name, ", ", 2)
+y = str_split_fixed(x[,2], ". ", 2)
+df["title"] = y[,1]
+head(df)
+```
+
+3. More solutions can be found in [here]("https://blogdown-demo.rbind.io/2018/02/27/r-file-paths/") where you can find additional info about r file paths.
+
+4. Another example is a kaggle post which describes constructing Neural Networks within different type of predictors such that text, image, numerical and categorical. Its a good example for data preprocessing.  ["Dance with Ensemble" Sharing Thread]("https://www.kaggle.com/c/avito-demand-prediction/discussion/59880")
+
+5. This is one of my favorite data visualization post in Kaggle. It contains multiple visualization libraries.  [Be my guest - Recruit Restaurant EDA]("https://www.kaggle.com/headsortails/be-my-guest-recruit-restaurant-eda").
+
