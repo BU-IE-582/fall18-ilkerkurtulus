@@ -313,16 +313,35 @@ $(document).ready(function () {
 
 
 <ol style="list-style-type: decimal">
-<li>While discovering titanic dataset i encountered that reading data stored in local to the github is a bit tricky. To do that one option is the following:</li>
+<li>While discovering titanic dataset i encountered that reading data stored in local to the github is a bit tricky. You can add <a href="http://htmlpreview.github.io/" class="uri">http://htmlpreview.github.io/</a>? to your git url to display like knit. Example: <a href="http://htmlpreview.github.io/?https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/interesting_examples.html" class="uri">http://htmlpreview.github.io/?https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/interesting_examples.html</a> The following steps are let you display your local data in git repo. (its not an efficient solution in terms of file size yet for small data its an easy implementation.)</li>
 </ol>
 <ul>
 <li>Save your data in local git directory then commit and push so that your file will be on your gitrepo.</li>
 <li>Read your file from raw.githubusercontent link which can be obtained by clicking raw button in above data storage directory.</li>
 </ul>
-<pre class="r"><code>library(stringr)
-df = read.csv(&quot;https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/train.csv&quot;)
-knitr::asis_output(head(df))</code></pre>
-<p>1:6c(0, 1, 1, 1, 0, 0)c(3, 1, 3, 1, 3, 3)c(109, 191, 358, 277, 16, 559)c(2, 1, 1, 1, 2, 2)c(22, 38, 26, 35, 35, NA)c(1, 1, 0, 1, 0, 0)c(0, 0, 0, 0, 0, 0)c(524, 597, 670, 50, 473, 276)c(7.25, 71.2833, 7.925, 53.1, 8.05, 8.4583)c(1, 83, 1, 57, 1, 1)c(4, 2, 4, 4, 4, 3)</p>
+<pre class="r"><code>df = read.csv(&quot;https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/train.csv&quot;)
+head(df)</code></pre>
+<pre><code>##   PassengerId Survived Pclass
+## 1           1        0      3
+## 2           2        1      1
+## 3           3        1      3
+## 4           4        1      1
+## 5           5        0      3
+## 6           6        0      3
+##                                                  Name    Sex Age SibSp
+## 1                             Braund, Mr. Owen Harris   male  22     1
+## 2 Cumings, Mrs. John Bradley (Florence Briggs Thayer) female  38     1
+## 3                              Heikkinen, Miss. Laina female  26     0
+## 4        Futrelle, Mrs. Jacques Heath (Lily May Peel) female  35     1
+## 5                            Allen, Mr. William Henry   male  35     0
+## 6                                    Moran, Mr. James   male  NA     0
+##   Parch           Ticket    Fare Cabin Embarked
+## 1     0        A/5 21171  7.2500              S
+## 2     0         PC 17599 71.2833   C85        C
+## 3     0 STON/O2. 3101282  7.9250              S
+## 4     0           113803 53.1000  C123        S
+## 5     0           373450  8.0500              S
+## 6     0           330877  8.4583              Q</code></pre>
 <ol start="2" style="list-style-type: decimal">
 <li>A basic string operation for feature engineering by using library called stringr.</li>
 </ol>
@@ -353,9 +372,9 @@ head(df)</code></pre>
 ## 5     0           373450  8.0500              S    Mr
 ## 6     0           330877  8.4583              Q    Mr</code></pre>
 <ol start="3" style="list-style-type: decimal">
-<li><p>More solutions can be found in <a href="%22https://blogdown-demo.rbind.io/2018/02/27/r-file-paths/%22">here</a> where you can find additional info about r file paths.</p></li>
-<li><p>Another example is a kaggle post which describes constructing Neural Networks within different type of predictors such that text, image, numerical and categorical. Its a good example for data preprocessing. <a href="%22https://www.kaggle.com/c/avito-demand-prediction/discussion/59880%22">“Dance with Ensemble” Sharing Thread</a></p></li>
-<li><p>This is one of my favorite data visualization post in Kaggle. It contains multiple visualization libraries. <a href="%22https://www.kaggle.com/headsortails/be-my-guest-recruit-restaurant-eda%22">Be my guest - Recruit Restaurant EDA</a>.</p></li>
+<li><p>More solutions can be found in <a href="https://blogdown-demo.rbind.io/2018/02/27/r-file-paths/">here</a> where you can find additional info about r file paths.</p></li>
+<li><p>Another example is a kaggle post which describes constructing Neural Networks within different type of predictors such that text, image, numerical and categorical. Its a good example for data preprocessing. <a href="https://www.kaggle.com/c/avito-demand-prediction/discussion/59880">“Dance with Ensemble” Sharing Thread</a></p></li>
+<li><p>This is one of my favorite data visualization post in Kaggle. It contains multiple visualization libraries. <a href="https://www.kaggle.com/headsortails/be-my-guest-recruit-restaurant-eda">Be my guest - Recruit Restaurant EDA</a>.</p></li>
 </ol>
 
 
