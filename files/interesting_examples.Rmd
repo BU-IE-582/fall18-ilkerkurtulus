@@ -17,8 +17,7 @@ rmarkdown::render("/home/baydogan/Courses/IE582/Fall18/Guidelines/example_homewo
 The following steps are let you display your local data in git repo. (its not an efficient solution in terms of file size yet for small data its an easy implementation.)
 + Save your data in local git directory then commit and push so that your file will be on your gitrepo.
 + Read your file from raw.githubusercontent link which can be obtained by clicking raw button in above data storage directory.
-```{r eval=TRUE,echo=TRUE}
-library(stringr)
+```{r eval=TRUE}
 df = read.csv("https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/train.csv")
 head(df)
 ```
