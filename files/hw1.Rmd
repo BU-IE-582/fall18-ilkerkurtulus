@@ -107,11 +107,11 @@ for(bm in bookmakers[1:5]){
 
 ```
 
-- You can find the graph for Bookmaker 1 [here]("hw1q1abookmaker1.jpeg")
-- You can find the graph for Bookmaker 2 [here]("https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/hw1q1abookmaker2.jpeg")
-- You can find the graph for Bookmaker 3 [here]("https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/hw1q1abookmaker3.jpeg")
-- You can find the graph for Bookmaker 4 [here]("https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/hw1q1abookmaker4.jpeg")
-- You can find the graph for Bookmaker 5 [here]("https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/hw1q1abookmaker5.jpeg")
+- You can find the graph for Bookmaker 1 [here]("https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw1q1abookmaker1.jpeg")
+- You can find the graph for Bookmaker 2 [here]("https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw1q1abookmaker2.jpeg")
+- You can find the graph for Bookmaker 3 [here]("https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw1q1abookmaker3.jpeg")
+- You can find the graph for Bookmaker 4 [here]("https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw1q1abookmaker4.jpeg")
+- You can find the graph for Bookmaker 5 [here]("https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw1q1abookmaker5.jpeg")
 
 Most of the cases probability for the bet under x = y line which caused by margin of the bookmaker. However in some cases like bet-at-home 0.85-0.9 bin, betting can be profitable for a customer. 
 
