@@ -413,11 +413,11 @@ for(bm in bookmakers[1:5]){
   legend(&quot;topleft&quot;,c(&quot;final odds&quot;, &quot;initial odds&quot;), pch = c(1,4), col = c(&quot;red&quot;, &quot;blue&quot;))
 }</code></pre>
 <ul>
-<li>You can find the graph for Bookmaker 1 <a href="%22https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw1q1abookmaker1.jpeg%22">here</a></li>
-<li>You can find the graph for Bookmaker 2 <a href="%22https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw1q1abookmaker2.jpeg%22">here</a></li>
-<li>You can find the graph for Bookmaker 3 <a href="%22https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw1q1abookmaker3.jpeg%22">here</a></li>
-<li>You can find the graph for Bookmaker 4 <a href="%22https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw1q1abookmaker4.jpeg%22">here</a></li>
-<li>You can find the graph for Bookmaker 5 <a href="%22https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw1q1abookmaker5.jpeg%22">here</a></li>
+<li>You can find the graph for Bookmaker 1 <a href="hw1q1abookmaker1.jpeg">here</a></li>
+<li>You can find the graph for Bookmaker 2 <a href="hw1q1abookmaker2.jpeg">here</a></li>
+<li>You can find the graph for Bookmaker 3 <a href="hw1q1abookmaker3.jpeg">here</a></li>
+<li>You can find the graph for Bookmaker 4 <a href="hw1q1abookmaker4.jpeg">here</a></li>
+<li>You can find the graph for Bookmaker 5 <a href="hw1q1abookmaker5.jpeg">here</a></li>
 </ul>
 <p>Most of the cases probability for the bet under x = y line which caused by margin of the bookmaker. However in some cases like bet-at-home 0.85-0.9 bin, betting can be profitable for a customer.</p>
 <p>Additionally, for overunder case bet companies try to avoid get close to 0 and 1 to protect margin. However there should be some games clearly in some matches total goals can be higher than 2.5 in which odds for over (under for lower than 2.5) should be close 1. That kind of matches can be predicted and betting them would be profitable.</p>
@@ -463,8 +463,8 @@ lines(x = yearsplot, y = avg_over_prob50, col = &quot;blue&quot;, lwd = 2.5)
 legend(&quot;topright&quot;,c(&quot;Fraction of Over Games&quot;, &quot;Average Over Probabilty&quot;), lty = c(1,1), col = c(&quot;red&quot;, &quot;blue&quot;))
 title(&quot;Average Probabilty and Fraction of Over Games for (0.45,0.50]&quot;)</code></pre>
 <ul>
-<li>You can find the graph for bin (0.4,0.45] <a href="%22https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/Hw1q1bbins040_045.jpeg%22">here</a></li>
-<li>You can find the graph for bin (0.45,0.5] <a href="%22https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/Hw1q1bbins045_050.jpeg%22">here</a></li>
+<li>You can find the graph for bin (0.4,0.45] <a href="Hw1q1bbins040_045.jpeg">here</a></li>
+<li>You can find the graph for bin (0.45,0.5] <a href="Hw1q1bbins045_050.jpeg">here</a></li>
 </ul>
 <ol start="2" style="list-style-type: decimal">
 <li>Codes for this part:</li>
@@ -497,9 +497,9 @@ o2 = delta[delta$oddtype == &quot;odd2&quot;]
 plot(o2$initial_odd, o2$delta_odd, xlab = &quot;initial odd&quot;, ylab = &quot;change in odd&quot;, col = &quot;blue&quot;)
 title(&quot;Initial odds versus Change in Odd for Odd2&quot;)</code></pre>
 <ul>
-<li>You can find the graph for odd change for oddX <a href="%22https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/hw1q2oddx.jpeg%22">here</a></li>
-<li>You can find the graph for odd change for odd1 <a href="%22https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/hw1q2odd1.jpeg%22">here</a></li>
-<li>You can find the graph for odd change for odd2 <a href="%22https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/hw1q2odd2.jpeg%22">here</a></li>
+<li>You can find the graph for odd change for oddX <a href="hw1q2oddx.jpeg">here</a></li>
+<li>You can find the graph for odd change for odd1 <a href="hw1q2odd1.jpeg">here</a></li>
+<li>You can find the graph for odd change for odd2 <a href="hw1q2odd2.jpeg">here</a></li>
 </ul>
 <p>From the graphs we can clearly see that odd change becomes higher when as initial gets higher. Thus detecting high initial odd matches that predicted with high confidence interval at early steps and playing them can be profitable.</p>
 

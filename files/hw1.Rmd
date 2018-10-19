@@ -107,11 +107,11 @@ for(bm in bookmakers[1:5]){
 
 ```
 
-- You can find the graph for Bookmaker 1 [here]("https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw1q1abookmaker1.jpeg")
-- You can find the graph for Bookmaker 2 [here]("https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw1q1abookmaker2.jpeg")
-- You can find the graph for Bookmaker 3 [here]("https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw1q1abookmaker3.jpeg")
-- You can find the graph for Bookmaker 4 [here]("https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw1q1abookmaker4.jpeg")
-- You can find the graph for Bookmaker 5 [here]("https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw1q1abookmaker5.jpeg")
+- You can find the graph for Bookmaker 1 [here](hw1q1abookmaker1.jpeg)
+- You can find the graph for Bookmaker 2 [here](hw1q1abookmaker2.jpeg)
+- You can find the graph for Bookmaker 3 [here](hw1q1abookmaker3.jpeg)
+- You can find the graph for Bookmaker 4 [here](hw1q1abookmaker4.jpeg)
+- You can find the graph for Bookmaker 5 [here](hw1q1abookmaker5.jpeg)
 
 Most of the cases probability for the bet under x = y line which caused by margin of the bookmaker. However in some cases like bet-at-home 0.85-0.9 bin, betting can be profitable for a customer. 
 
@@ -161,8 +161,8 @@ title("Average Probabilty and Fraction of Over Games for (0.45,0.50]")
 
 ```
 
-- You can find the graph for bin (0.4,0.45] [here]("https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/Hw1q1bbins040_045.jpeg")
-- You can find the graph for bin (0.45,0.5] [here]("https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/Hw1q1bbins045_050.jpeg")
+- You can find the graph for bin (0.4,0.45] [here](Hw1q1bbins040_045.jpeg)
+- You can find the graph for bin (0.45,0.5] [here](Hw1q1bbins045_050.jpeg)
 
 2. Codes for this part:
 
@@ -196,9 +196,9 @@ plot(o2$initial_odd, o2$delta_odd, xlab = "initial odd", ylab = "change in odd",
 title("Initial odds versus Change in Odd for Odd2")
 ```
 
-- You can find the graph for odd change for oddX [here]("https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/hw1q2oddx.jpeg")
-- You can find the graph for odd change for odd1 [here]("https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/hw1q2odd1.jpeg")
-- You can find the graph for odd change for odd2 [here]("https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/hw1q2odd2.jpeg")
+- You can find the graph for odd change for oddX [here](hw1q2oddx.jpeg)
+- You can find the graph for odd change for odd1 [here](hw1q2odd1.jpeg)
+- You can find the graph for odd change for odd2 [here](hw1q2odd2.jpeg)
 
 From the graphs we can clearly see that odd change becomes higher when as initial gets higher. Thus detecting high initial odd matches that predicted with high confidence interval at early steps and playing them can be profitable. 
 
