@@ -1,0 +1,211 @@
+---
+title: "HW1"
+author: Ilker Kurtulus - IE582 - Fall 2018
+---
+```{r,echo=FALSE,results="hide"}
+library(knitr)
+opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+```
+1. 
+- Part A
+  
+```{r eval=FALSE}
+install.packages("data.table")
+install.packages("anytime")
+install.packages("stringr")
+install.packages("dplyr")
+install.packages("ggplot2")
+
+library(data.table)
+library(anytime)
+library(stringr)
+library(dplyr)
+library(ggplot2)
+
+mm = readRDS("/Users/ilkerkurtulus/Documents/cse-master/ie582/data/hw1/df9b1196-e3cf-4cc7-9159-f236fe738215_matches.rds")
+mm = data.table(mm)
+oo = readRDS("/Users/ilkerkurtulus/Documents/cse-master/ie582/data/hw1/df9b1196-e3cf-4cc7-9159-f236fe738215_odd_details.rds")
+oo = data.table(oo)
+mm[, c("leagueId","type"):=NULL]
+mm$date = anytime(mm$date)
+mm = mm[is.na(mm$score)==FALSE]
+mm = mm[, c("home_goal", "away_goal") := tstrsplit(score, ":", fixed=TRUE)]
+mm$home_goal = as.numeric(mm$home_goal)
+mm$away_goal = as.numeric(mm$away_goal)
+mm[, total_goals:=home_goal+away_goal]
+mm = mutate(mm, is_over = ifelse(total_goals > 2.5, 1,0))
+mm = data.table(mm)
+oo$date = anytime(oo$date)
+
+# You can focus on only 2.5 threshold (i.e. totalhandicap=2.5)
+df = oo[oo$totalhandicap == 2.5]
+bookmakers = unique(df$bookmaker)
+
+# tmp => bookmakers'a göre değişecek
+for(bm in bookmakers[1:5]){
+  tmp = df[bookmaker == bm]
+  matches = unique(tmp$matchId)
+  result_matchids = c()
+  result_initial_over_prob = c()
+  result_final_over_prob = c()
+  result_real = c()
+  counter = 0
+  for(mid in matches){
+    if(dim(mm[matchId == mid])[1] > 0){
+      tmp2 = tmp[matchId == mid]
+      ou_initial_date = min(tmp2[oddtype == "over"]$date)
+      ou_final_date = max(tmp2[oddtype == "over"]$date)
+      initial_over_odd = tmp2[(date == ou_initial_date) & (oddtype == "over")]$odd
+      initial_under_odd = tmp2[(date == ou_initial_date) & (oddtype == "under")]$odd
+      initial_over_prob = initial_under_odd/(initial_under_odd + initial_over_odd)
+      final_over_odd = tmp2[(date == ou_final_date) & (oddtype == "over")]$odd
+      final_under_odd = tmp2[(date == ou_final_date) & (oddtype == "under")]$odd
+      final_over_prob = final_under_odd/(final_under_odd + final_over_odd)
+      real_res = unique(mm[matchId == mid]$is_over)
+      
+      if(counter == 0){
+        result_table = data.table(V1 = mid, V2 = initial_over_prob, V3 = final_over_prob, V4 = real_res)
+      } else{
+        result_table = try(rbind(result_table, list(mid,initial_over_prob,final_over_prob,real_res)))
+      }
+      counter = counter + 1
+    }
+  }
+  result_table = result_table[-1,]
+  result_table = data.table(result_table)
+  assign(paste(bm, "result_table", sep = "_"), result_table)
+  # construct graph
+  bins = seq(0.05, 1 ,by = 0.05)
+  n_matches = c()
+  init_ratio = c()
+  for(bin in bins){
+    tmp_list = unlist(result_table[(result_table$V2 <= bin ) & (result_table$V2 > bin - 0.1)]$V4)
+    n_matches = c(n_matches,length(tmp_list))
+    init_ratio= c(init_ratio,mean(tmp_list))
+  }
+  init_ratio[is.na(init_ratio)] = 0
+  assign(paste(bm, "initial_ratio", sep = "_"), init_ratio)
+  
+  
+  bins = seq(0.05, 1 ,by = 0.05)
+  n_matches = c()
+  final_ratio = c()
+  for(bin in bins){
+    tmp_list = unlist(result_table[(result_table$V3 <= bin ) & (result_table$V3 > bin - 0.1)]$V4)
+    n_matches = c(n_matches,length(tmp_list))
+    final_ratio= c(final_ratio,mean(tmp_list))
+  }
+  final_ratio[is.na(final_ratio)] = 0
+  assign(paste(bm, "final_ratio", sep = "_"), final_ratio)
+  
+  plot(bins,init_ratio, col = "red")
+  points(bins, final_ratio, col = "blue")
+  lines(bins, bins, col = "black")
+  title(paste(bm, "final_and_inital", sep = "_"))
+  legend("topleft",c("final odds", "initial odds"), pch = c(1,4), col = c("red", "blue"))
+}
+
+```
+
+You can find the graph for Bookmaker 1 [here]("https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/hw1q1abookmaker1.jpeg")
+You can find the graph for Bookmaker 2 [here]("https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/hw1q1abookmaker2.jpeg")
+You can find the graph for Bookmaker 3 [here]("https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/hw1q1abookmaker3.jpeg")
+You can find the graph for Bookmaker 4 [here]("https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/hw1q1abookmaker4.jpeg")
+You can find the graph for Bookmaker 5 [here]("https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/hw1q1abookmaker5.jpeg")
+
+Most of the cases probability for the bet under x = y line which caused by margin of the bookmaker. However in some cases like bet-at-home 0.85-0.9 bin, betting can be profitable for a customer. 
+
+Additionally, for overunder case bet companies try to avoid get close to 0 and 1 to protect margin. However there should be some games clearly in some matches total goals can be higher than 2.5 in which odds for over (under for lower than 2.5) should be close 1. That kind of matches can be predicted and betting them would be profitable.
+
+- Part B
+Codes for this part:
+```{r eval = FALSE}
+bm1 = data.table(BetVictor_result_table)
+names(bm1) = c("matchId", "initial_over_prob", "final_over_prob","real_result")
+bm1 = bm1[, matchId:= unlist(matchId)]
+bm1 = bm1[, initial_over_prob:= unlist(initial_over_prob)]
+bm1 = bm1[, final_over_prob:= unlist(final_over_prob)]
+bm1 = bm1[, real_result:= unlist(real_result)]
+bm1 = merge(bm1, mm, by = "matchId")
+
+years = c("2012-01-01", "2012-01-01","2013-01-01","2014-01-01","2015-01-01","2016-01-01","2017-01-01","2018-01-01","2019-01-01")
+total_matches_years45 = c()
+frac_over_years45 = c()
+avg_over_prob45 = c()
+total_matches_years50 = c()
+frac_over_years50 = c()
+avg_over_prob50 = c()
+
+for(i in seq(3,9, by = 1)){
+  tmp = bm1[(bm1$date >= anytime(years[i-1])) & (bm1$date < anytime(years[i]))]
+  tmp45 = tmp[(tmp$final_over_prob > bins[8]) &(tmp$final_over_prob <= bins[9])]
+  total_matches_years45 = c(total_matches_years45, dim(tmp45)[1])
+  frac_over_years45 = c(frac_over_years45, mean(unlist(tmp45$is_over)))
+  avg_over_prob45 = c(avg_over_prob45, mean(unlist(tmp45$final_over_prob)))
+  
+  tmp50 = tmp[(tmp$final_over_prob > bins[9]) &(tmp$final_over_prob <= bins[10])]
+  total_matches_years50 = c(total_matches_years50, dim(tmp50)[1])
+  frac_over_years50 = c(frac_over_years50, mean(unlist(tmp50$is_over)))
+  avg_over_prob50 = c(avg_over_prob50, mean(unlist(tmp50$final_over_prob)))
+}
+yearsplot = c(2012,2013,2014,2015,2016,2017,2018)
+plot(x = yearsplot, y = frac_over_years45, col = "red", type = "l", ylab = "Avg probabilities and fraction", xlab = "years", lwd = 2.5)
+lines(x = yearsplot, y = avg_over_prob45, col = "blue", lwd = 2.5)
+legend("topleft",c("Fraction of Over Games", "Average Over Probabilty"), lty = c(1,1), col = c("red", "blue"))
+title("Average Probabilty and Fraction of Over Games for (0.4,0.45]")
+
+plot(x = yearsplot, y = frac_over_years50, col = "red", type = "l", ylab = "Avg probabilities and fraction", xlab = "years", lwd = 2.5)
+lines(x = yearsplot, y = avg_over_prob50, col = "blue", lwd = 2.5)
+legend("topright",c("Fraction of Over Games", "Average Over Probabilty"), lty = c(1,1), col = c("red", "blue"))
+title("Average Probabilty and Fraction of Over Games for (0.45,0.50]")
+
+```
+
+You can find the graph for bin (0.4,0.45] [here]("https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/Hw1q1bbins040_045.jpeg")
+You can find the graph for bin (0.45,0.5] [here]("https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/Hw1q1bbins045_050.jpeg")
+
+2. Codes for this part:
+
+```{r eval = FALSE}
+tr = oo[betType == "1x2"]
+tr[,.N, by = bookmaker]
+# Betclic is the highest. so i chose Betclic
+# bc = tr[bookmaker == "Betclic",,]
+
+bc[, final_odd_date:=max(date),by = .(matchId,oddtype)]
+bc[, initial_odd_date:=min(date),by = .(matchId,oddtype)]
+bc[date == final_odd_date, final_odd := odd,]
+bc[date == initial_odd_date, initial_odd := odd,]
+bc[,final_bet_test:=unique(final_odd)[is.na(unique(final_odd)) == FALSE],by = .(matchId,oddtype)]
+bc[,initial_bet_test:=unique(initial_odd)[is.na(unique(initial_odd)) == FALSE],by = .(matchId,oddtype)]
+bc[,delta_odd :=.(final_bet_test - initial_bet_test, oddtype),  ,by = .(matchId,oddtype )]
+delta = bc[, .(unique(delta_odd),unique(initial_bet_test)), by =.(matchId, oddtype)]
+names(delta) = c("matchId","oddtype","delta_odd","initial_odd")
+
+#scatter plots
+ox = delta[delta$oddtype == "oddX"]
+plot(ox$initial_odd, ox$delta_odd, xlab = "initial odd", ylab = "change in odd", col = "blue")
+title("Initial odds versus Change in Odd for OddX")
+
+o1 = delta[delta$oddtype == "odd1"]
+plot(o1$initial_odd, o1$delta_odd, xlab = "initial odd", ylab = "change in odd", col = "blue")
+title("Initial odds versus Change in Odd for Odd1")
+
+o2 = delta[delta$oddtype == "odd2"]
+plot(o2$initial_odd, o2$delta_odd, xlab = "initial odd", ylab = "change in odd", col = "blue")
+title("Initial odds versus Change in Odd for Odd2")
+```
+
+You can find the graph for odd change for oddX [here]("https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/hw1q2oddx.jpeg")
+You can find the graph for odd change for odd1 [here]("https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/hw1q2odd1.jpeg")
+You can find the graph for odd change for odd2 [here]("https://raw.githubusercontent.com/BU-IE-582/fall18-ilkerkurtulus/master/files/hw1q2odd2.jpeg")
+
+From the graphs we can clearly see that odd change becomes higher when as initial gets higher. Thus detecting high initial odd matches that predicted with high confidence interval at early steps and playing them can be profitable. 
+
+
+
+
+
+
+
+
