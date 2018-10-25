@@ -4,3 +4,6 @@
 
 ## HW 1 
 HW1 can be found in [here](http://htmlpreview.github.io/?https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw1.html)
+
+## HW 2
+HW2 can be found in [here](http://htmlpreview.github.io/?https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/homework2.html)

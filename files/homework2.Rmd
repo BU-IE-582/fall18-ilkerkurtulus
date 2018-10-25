@@ -1,0 +1,415 @@
+---
+title: "HW 2"
+author: Ilker Kurtulus - IE582 - Fall 2018
+---
+
+```{r,echo=FALSE,results="hide"}
+library(knitr)
+opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+```
+
+
+1.Over - Under Analysis
+
+- Part A
+```{r, echo = FALSE, include=FALSE}
+library(data.table)
+library(anytime)
+library(stringr)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(jpeg)
+library(fields)
+library(formatR)
+```
+
+```{r, echo = TRUE}
+
+oo = readRDS("/Users/ilkerkurtulus/Documents/cse-master/ie582/data/hw1/df9b1196-e3cf-4cc7-9159-f236fe738215_odd_details.rds")
+oo = data.table(oo)
+oo$date = anytime(oo$date)
+mm = readRDS("/Users/ilkerkurtulus/Documents/cse-master/ie582/data/hw1/df9b1196-e3cf-4cc7-9159-f236fe738215_matches.rds")
+mm = data.table(mm)
+mm[, c("leagueId","type"):=NULL]
+mm$date = anytime(mm$date)
+mm = mm[is.na(mm$score)==FALSE]
+mm = mm[, c("home_goal", "away_goal") := tstrsplit(score, ":", fixed=TRUE)]
+mm$home_goal = as.numeric(mm$home_goal)
+mm$away_goal = as.numeric(mm$away_goal)
+mm[, total_goals:=home_goal+away_goal]
+mm = mutate(mm, is_over = ifelse(total_goals > 2.5, 1,0))
+mm = data.table(mm)
+head(mm)
+```
+
+
+Different handicap values mean different events with different probability. So we should not considered them together. Thats why from "ah" betType i will pick totalhandicap = 0 and for "ou" betType lets pick 2.5
+
+While choosing bookmakers we need to care that bookmakers should provide odds of above handicap and bettype. To do that lets print them and choose:
+
+```{r, echo = TRUE}
+oo[(betType == "ou") & (totalhandicap == "2.5"), .N, by = bookmaker]
+```
+
+```{r, echo = TRUE}
+oo[(betType == "ah") & (totalhandicap == "0"), .N, by = bookmaker]
+```
+
+So we can select 5 bookmakers as 1xBet, bet365, Betfair Exchange, Pinnacle and 10Bet
+
+```{r, echo = TRUE}
+bookmakers = c("1xBet", "bet365", "Betfair Exchange", "Pinnacle","10Bet")
+func_1a = function(n_bm){
+  df = oo[bookmaker == bookmakers[n_bm]]
+  pdf_1 = dcast(df[(betType != "ou") & (betType != "ah" )], matchId + bookmaker ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  
+  # only choose ah = 0 due to different handicap means different odds, so its not useful to mix different handicaps
+  x = df[(betType == "ah") & (totalhandicap == "0")]
+  pdf_2 = dcast(x, matchId ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  # only choose ou = 2.5 due to different handicap means different odds, so its not useful to mix different handicaps
+  x = df[(betType == "ou") & (totalhandicap == "2.5")]
+  pdf_3 = dcast(x, matchId ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  pdf = na.omit(pdf_1[pdf_2, on = "matchId"][pdf_3, on = "matchId"])
+  
+  all_df = na.omit(pdf[mm[, c("matchId", "is_over")], on = "matchId"])
+  all_df = all_df[, is_over:=as.character(is_over)]
+  pca = prcomp(all_df[, 3:9], center = TRUE, scale. = TRUE)
+  print(summary(pca))
+  eigs = pca$sdev^2
+  exp_var_ratio = eigs/sum(eigs)
+  cum_exp_var_ratio = cumsum(exp_var_ratio)
+  
+  plot(cum_exp_var_ratio, type = "l", xlab = "# of Principle Components", ylab = "Cumulative Explained Variance")
+  title(paste("Cumulative Explained Variance Ratio of PCA for " , bookmakers[n_bm], sep = ""))
+  
+  all_pca = predict(pca, newdata = all_df[,3:9])
+  all_pca3d = all_pca[,1:3]
+  all_pca3d = data.table(all_pca3d)
+  all_pca3d[,is_over:= all_df$is_over]
+  #3d plot with 1st, 2nd and 3rd components
+  plot_ly(all_pca3d,x = ~PC1, y = ~PC2, z = ~PC3 , colors = c("#132B43", "#56B1F7"), color = ~is_over, type = "scatter3d", mode = "markers") %>% layout(title = paste("Transformed Data with p = 3 PCA and is_over results",bookmakers[n_bm], sep = " "))
+}
+```
+
+
+
+```{r echo=TRUE, paged.print=FALSE}
+func_1a(1)
+```
+
+[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1a1.html)
+
+
+```{r, echo = TRUE, paged.print=FALSE}
+func_1a(2)
+```
+
+[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1a2.html)
+
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+func_1a(3)
+```
+
+[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1a3.html)
+
+```{r, echo = TRUE, paged.print=FALSE}
+func_1a(4)
+```
+
+[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1a4.html)
+
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+func_1a(5)
+```
+
+[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1a5.html)
+
+- Part B
+
+Calculation of manhattan and euclidian distances as well as 2D and 3D of them with MDS:
+
+```{r, echo = TRUE}
+bookmakers = c("1xBet", "bet365", "Betfair Exchange", "Pinnacle","10Bet")
+func_1bman= function(n_bm){
+  df = oo[bookmaker == bookmakers[n_bm]]
+  pdf_1 = dcast(df[(betType != "ou") & (betType != "ah" )], matchId + bookmaker ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  
+  x = df[(betType == "ah") & (totalhandicap == "0")]
+  pdf_2 = dcast(x, matchId ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  # only choose ou = 2.5 due to different handicap means different odds, so its not useful to mix different handicaps
+  x = df[(betType == "ou") & (totalhandicap == "2.5")]
+  pdf_3 = dcast(x, matchId ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  
+  pdf = na.omit(pdf_1[pdf_2, on = "matchId"][pdf_3, on = "matchId"])
+  all_df = na.omit(pdf[mm[, c("matchId", "is_over")], on = "matchId"])
+  
+  all_df = all_df[, is_over:=as.character(is_over)]
+  
+  dist_man = dist(all_df[,3:9], method = "manhattan")
+  mds_man3 = data.table(cmdscale(dist_man, eig = TRUE, k = 3)$points)
+  mds_man3[,is_over:= all_df$is_over]
+  
+  plot_ly(mds_man3,x = ~V1, y = ~V2, z = ~V3 , color = ~is_over, type = "scatter3d", mode = "markers",domain = list(x = c(0, 1), y = c(0.5, 1))) %>% layout(title = paste("MDS Manhattan and is_over results",bookmakers[n_bm], sep = " "))
+}
+```
+
+```{r, echo = TRUE}
+bookmakers = c("1xBet", "bet365", "Betfair Exchange", "Pinnacle","10Bet")
+func_1beuc = function(n_bm){
+  df = oo[bookmaker == bookmakers[n_bm]]
+  pdf_1 = dcast(df[(betType != "ou") & (betType != "ah" )], matchId + bookmaker ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  
+  x = df[(betType == "ah") & (totalhandicap == "0")]
+  pdf_2 = dcast(x, matchId ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  # only choose ou = 2.5 due to different handicap means different odds, so its not useful to mix different handicaps
+  x = df[(betType == "ou") & (totalhandicap == "2.5")]
+  pdf_3 = dcast(x, matchId ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  
+  pdf = na.omit(pdf_1[pdf_2, on = "matchId"][pdf_3, on = "matchId"])
+  all_df = na.omit(pdf[mm[, c("matchId", "is_over")], on = "matchId"])
+  
+  all_df = all_df[, is_over:=as.character(is_over)]
+  
+  dist_euc = dist(all_df[,3:9], method = "euclidian")
+  mds_euc3 = data.table(cmdscale(dist_euc, eig = TRUE, k = 3)$points)
+  mds_euc3[,is_over:= all_df$is_over]
+  
+  plot_ly(mds_euc3,x = ~V1, y = ~V2, z = ~V3 , color = ~is_over,type = "scatter3d", mode = "markers",domain = list(x = c(0, 1), y = c(0.0, 0.5))) %>% layout(title = paste("MDS Euclidian and is_over results",bookmakers[n_bm], sep = " "))
+}
+```
+
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE }
+func_1beuc(1)
+```
+[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1b1e.html)
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE }
+func_1bman(1)
+```
+[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1b1m.html)
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+func_1beuc(2)
+```
+[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1b2e.html)
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE }
+func_1bman(2)
+```
+[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1b2m.html)
+
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+func_1beuc(3)
+```
+[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1b3e.html)
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE }
+func_1bman(3)
+```
+[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1b3m.html)
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+func_1beuc(4)
+```
+[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1b4e.html)
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE }
+func_1bman(4)
+```
+[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1b4m.html)
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+func_1beuc(5)
+```
+[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1b5e.html)
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE }
+func_1bman(5)
+```
+[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1b5m.html)
+- Part C
+
+2. 1x2 Analysis
+
+Feature engineering for this part:
+
+- Part A
+```{r, echo = TRUE}
+bookmakers = c("1xBet", "bet365", "Betfair Exchange", "Pinnacle","10Bet")
+func_2a = function(n_bm){
+  df = oo[bookmaker == bookmakers[n_bm]]
+  pdf_1 = dcast(df[(betType != "ou") & (betType != "ah" )], matchId + bookmaker ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  
+  x = df[(betType == "ah") & (totalhandicap == "0")]
+  pdf_2 = dcast(x, matchId ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  # only choose ou = 2.5 due to different handicap means different odds, so its not useful to mix different handicaps
+  x = df[(betType == "ou") & (totalhandicap == "2.5")]
+  pdf_3 = dcast(x, matchId ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  
+  pdf = na.omit(pdf_1[pdf_2, on = "matchId"][pdf_3, on = "matchId"])
+  
+  mm[, is_1x2 := ifelse(home_goal > away_goal, "1", ifelse(home_goal == away_goal, "x","2"))]
+  all_1x2 = na.omit(pdf[mm[, c("matchId", "is_1x2")], on = "matchId"])
+
+  pca = prcomp(all_1x2[, 3:9], center = TRUE, scale. = TRUE)
+  print(summary(pca))
+  eigs = pca$sdev^2
+  exp_var_ratio = eigs/sum(eigs)
+  cum_exp_var_ratio = cumsum(exp_var_ratio)
+  
+  plot(cum_exp_var_ratio, type = "l", xlab = "# of Principle Components", ylab = "Cumulative Explained Variance")
+  title(paste("1x2 Results - Cumulative Explained Variance Ratio of PCA for " , bookmakers[n_bm], sep = ""))
+  
+  all_pca = predict(pca, newdata = all_1x2[,3:9])
+  all_pca3d = all_pca[,1:3]
+  all_pca3d = data.table(all_pca3d)
+  all_pca3d[,is_1x2:= all_1x2$is_1x2]
+  #3d plot with 1st, 2nd and 3rd components
+  plot_ly(all_pca3d,x = ~PC1, y = ~PC2, z = ~PC3 , color = ~is_1x2, type = "scatter3d", mode = "markers") %>% layout(title = paste("Transformed Data with p = 3 PCA and is_1x2 results",bookmakers[n_bm], sep = " "))
+}
+```
+
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+func_2a(1)
+```
+
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+func_2a(2)
+```
+
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+func_2a(3)
+```
+
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+func_2a(4)
+```
+
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+func_2a(5)
+```
+
+- Part B
+
+Calculation of manhattan and euclidian distances as well as 2D and 3D of them with MDS:
+
+```{r, echo = TRUE}
+bookmakers = c("1xBet", "bet365", "Betfair Exchange", "Pinnacle","10Bet")
+func_2beuc = function(n_bm){
+  df = oo[bookmaker == bookmakers[n_bm]]
+  pdf_1 = dcast(df[(betType != "ou") & (betType != "ah" )], matchId + bookmaker ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  
+  x = df[(betType == "ah") & (totalhandicap == "0")]
+  pdf_2 = dcast(x, matchId ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  # only choose ou = 2.5 due to different handicap means different odds, so its not useful to mix different handicaps
+  x = df[(betType == "ou") & (totalhandicap == "2.5")]
+  pdf_3 = dcast(x, matchId ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  
+  pdf = na.omit(pdf_1[pdf_2, on = "matchId"][pdf_3, on = "matchId"])
+  mm[, is_1x2 := ifelse(home_goal > away_goal, "1", ifelse(home_goal == away_goal, "x","2"))]
+  all_1x2 = na.omit(pdf[mm[, c("matchId", "is_1x2")], on = "matchId"])
+  
+  all_1x2 = all_1x2[, is_1x2:=as.character(is_1x2)]
+  dist_euc = dist(all_1x2[,3:9], method = "euclidian")
+  mds_euc3 = data.table(cmdscale(dist_euc, eig = TRUE, k = 3)$points)
+  mds_euc3[,is_1x2:= all_1x2$is_1x2]
+  
+  plot_ly(mds_euc3,x = ~V1, y = ~V2, z = ~V3 , color = ~is_1x2, type = "scatter3d", mode = "markers") %>% layout(title = paste("MDS Euclidian and is_1x2 results",bookmakers[n_bm], sep = " "))
+}
+```
+
+
+```{r, echo = TRUE}
+bookmakers = c("1xBet", "bet365", "Betfair Exchange", "Pinnacle","10Bet")
+func_2bman = function(n_bm){
+  df = oo[bookmaker == bookmakers[n_bm]]
+  pdf_1 = dcast(df[(betType != "ou") & (betType != "ah" )], matchId + bookmaker ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  
+  x = df[(betType == "ah") & (totalhandicap == "0")]
+  pdf_2 = dcast(x, matchId ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  # only choose ou = 2.5 due to different handicap means different odds, so its not useful to mix different handicaps
+  x = df[(betType == "ou") & (totalhandicap == "2.5")]
+  pdf_3 = dcast(x, matchId ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  
+  pdf = na.omit(pdf_1[pdf_2, on = "matchId"][pdf_3, on = "matchId"])
+  mm[, is_1x2 := ifelse(home_goal > away_goal, "1", ifelse(home_goal == away_goal, "x","2"))]
+  all_1x2 = na.omit(pdf[mm[, c("matchId", "is_1x2")], on = "matchId"])
+  
+  all_1x2 = all_1x2[, is_1x2:=as.character(is_1x2)]
+  dist_man = dist(all_1x2[,3:9], method = "manhattan")
+  mds_man3 = data.table(cmdscale(dist_man, eig = TRUE, k = 3)$points)
+  mds_man3[,is_1x2:= all_1x2$is_1x2]
+  
+  plot_ly(mds_man3,x = ~V1, y = ~V2, z = ~V3 , color = ~is_1x2, type = "scatter3d", mode = "markers") %>% layout(title = paste("MDS Manhattan and is_1x2 results",bookmakers[n_bm], sep = " "))
+}
+```
+
+
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+func_2bman(1)
+```
+
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+func_2beuc(1)
+```
+
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+func_2bman(2)
+```
+
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+func_2beuc(2)
+```
+
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+func_2bman(3)
+```
+
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+func_2beuc(3)
+```
+
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+func_2bman(4)
+```
+
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+func_2beuc(4)
+```
+
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+func_2bman(5)
+```
+
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+func_2beuc(5)
+```
+
+- Part C
+
+
+3.Image Analysis
+
+1. Read Image
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+img = readJPEG("/Users/ilkerkurtulus/Downloads/IMG_7955.jpg")
+```
+
+2. 
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+str(img)
+dim(img)
+```
+a) 
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+if (exists("rasterImage")) {
+  plot(1:2, type='n')
+  rasterImage(img, 1, 1, 2, 2)
+}
+```
+
+b) 
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+if (exists("rasterImage")) {
+  plot(1:4, type='n')
+  rasterImage(img[,,1], 1, 1, 2, 2)
+  rasterImage(img[,,2], 2, 1, 3, 2)
+  rasterImage(img[,,3], 3, 1, 4, 2)
+}
+```
+
+
+3. 
