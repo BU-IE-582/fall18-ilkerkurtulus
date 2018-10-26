@@ -43,9 +43,6 @@ head(mm)
 
 2. 1x2 Analysis
 
-Feature engineering for this part:
-
-- Part A
 ```{r eval=TRUE}
 bookmakers = c("1xBet", "bet365", "Betfair Exchange", "Pinnacle","10Bet")
 func_2a = function(n_bm){
@@ -80,22 +77,7 @@ func_2a = function(n_bm){
 }
 ```
 
+
 ```{r eval=TRUE}
 func_2a(1)
-```
-
-```{r eval=TRUE}
-func_2a(2)
-```
-
-```{r eval=TRUE}
-func_2a(3)
-```
-
-```{r eval=TRUE}
-func_2a(4)
-```
-
-```{r eval=TRUE}
-func_2a(5)
 ```
