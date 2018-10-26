@@ -17,6 +17,7 @@ library(data.table)
 library(anytime)
 library(stringr)
 library(dplyr)
+library(gridExtra)
 library(ggplot2)
 library(plotly)
 library(jpeg)
@@ -74,7 +75,8 @@ func_1a = function(n_bm){
   
   all_df = na.omit(pdf[mm[, c("matchId", "is_over")], on = "matchId"])
   all_df = all_df[, is_over:=as.character(is_over)]
-  pca = prcomp(all_df[, 3:9], center = TRUE, scale. = TRUE)
+  scaled_df = scale(all_df[, 3:9])
+  pca = prcomp(scaled_df, center = TRUE, scale. = TRUE)
   print(summary(pca))
   eigs = pca$sdev^2
   exp_var_ratio = eigs/sum(eigs)
@@ -83,12 +85,11 @@ func_1a = function(n_bm){
   plot(cum_exp_var_ratio, type = "l", xlab = "# of Principle Components", ylab = "Cumulative Explained Variance")
   title(paste("Cumulative Explained Variance Ratio of PCA for " , bookmakers[n_bm], sep = ""))
   
-  all_pca = predict(pca, newdata = all_df[,3:9])
-  all_pca3d = all_pca[,1:3]
-  all_pca3d = data.table(all_pca3d)
-  all_pca3d[,is_over:= all_df$is_over]
-  #3d plot with 1st, 2nd and 3rd components
-  plot_ly(all_pca3d,x = ~PC1, y = ~PC2, z = ~PC3 , colors = c("#132B43", "#56B1F7"), color = ~is_over, type = "scatter3d", mode = "markers") %>% layout(title = paste("Transformed Data with p = 3 PCA and is_over results",bookmakers[n_bm], sep = " "))
+  all_pca = predict(pca, newdata = scaled_df)
+  all_pca2d = all_pca[,1:2]
+  all_pca2d = data.table(all_pca2d)
+  all_pca2d[,is_over:= all_df$is_over]
+  ggplot(all_pca2d, aes(x = PC1, y = PC2, color = is_over)) + geom_point() +   ggtitle(paste("Transformed Data with p = 2 PCA and is_over results",bookmakers[n_bm], sep = " "))
 }
 ```
 
@@ -98,32 +99,29 @@ func_1a = function(n_bm){
 func_1a(1)
 ```
 
-[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1a1.html)
-
 
 ```{r, echo = TRUE, paged.print=FALSE}
 func_1a(2)
 ```
 
-[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1a2.html)
 
 ```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
 func_1a(3)
 ```
 
-[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1a3.html)
-
 ```{r, echo = TRUE, paged.print=FALSE}
 func_1a(4)
 ```
-
-[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1a4.html)
 
 ```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
 func_1a(5)
 ```
 
-[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1a5.html)
+Using first 2 components is easy to visualize however in terms of explaining variance of the data its not beneficial. Yet in our case except bet365 all datatables has higher than 0.70 explained variance ratio so 2d is a good choice to visualization. 
+
+When we look at the scatter plots we cant find a distinction between over/under result. This is caused by selection of p as 2 in PCA and behavior of the data (ie nonlinearity) is not suitable for PCA.
+
+
 
 - Part B
 
@@ -145,82 +143,41 @@ func_1bman= function(n_bm){
   all_df = na.omit(pdf[mm[, c("matchId", "is_over")], on = "matchId"])
   
   all_df = all_df[, is_over:=as.character(is_over)]
-  
-  dist_man = dist(all_df[,3:9], method = "manhattan")
-  mds_man3 = data.table(cmdscale(dist_man, eig = TRUE, k = 3)$points)
-  mds_man3[,is_over:= all_df$is_over]
-  
-  plot_ly(mds_man3,x = ~V1, y = ~V2, z = ~V3 , color = ~is_over, type = "scatter3d", mode = "markers",domain = list(x = c(0, 1), y = c(0.5, 1))) %>% layout(title = paste("MDS Manhattan and is_over results",bookmakers[n_bm], sep = " "))
+  scaled_df = scale(all_df[, 3:9])
+  dist_man = dist(scaled_df, method = "manhattan")
+  mds_man2 = data.table(cmdscale(dist_man, eig = TRUE, k = 2)$points)
+  mds_man2[,is_over:= all_df$is_over]
+  dist_euc = dist(scaled_df, method = "euclidian")
+  mds_euc2 = data.table(cmdscale(dist_euc, eig = TRUE, k = 2)$points)
+  mds_euc2[,is_over:= all_df$is_over]
+  p1 = qplot(data = mds_euc2, V1, V2, color = is_over) + ggtitle( paste("MDS Euclidian and is_over results for",bookmakers[n_bm], sep = " "))
+  p2 = qplot(data = mds_man2, V1, V2, color = is_over) + ggtitle( paste("MDS Manhattan and is_over results for",bookmakers[n_bm], sep = " "))
+  grid.arrange(p1,p2)
 }
 ```
 
-```{r, echo = TRUE}
-bookmakers = c("1xBet", "bet365", "Betfair Exchange", "Pinnacle","10Bet")
-func_1beuc = function(n_bm){
-  df = oo[bookmaker == bookmakers[n_bm]]
-  pdf_1 = dcast(df[(betType != "ou") & (betType != "ah" )], matchId + bookmaker ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
-  
-  x = df[(betType == "ah") & (totalhandicap == "0")]
-  pdf_2 = dcast(x, matchId ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
-  # only choose ou = 2.5 due to different handicap means different odds, so its not useful to mix different handicaps
-  x = df[(betType == "ou") & (totalhandicap == "2.5")]
-  pdf_3 = dcast(x, matchId ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
-  
-  pdf = na.omit(pdf_1[pdf_2, on = "matchId"][pdf_3, on = "matchId"])
-  all_df = na.omit(pdf[mm[, c("matchId", "is_over")], on = "matchId"])
-  
-  all_df = all_df[, is_over:=as.character(is_over)]
-  
-  dist_euc = dist(all_df[,3:9], method = "euclidian")
-  mds_euc3 = data.table(cmdscale(dist_euc, eig = TRUE, k = 3)$points)
-  mds_euc3[,is_over:= all_df$is_over]
-  
-  plot_ly(mds_euc3,x = ~V1, y = ~V2, z = ~V3 , color = ~is_over,type = "scatter3d", mode = "markers",domain = list(x = c(0, 1), y = c(0.0, 0.5))) %>% layout(title = paste("MDS Euclidian and is_over results",bookmakers[n_bm], sep = " "))
-}
-```
-
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE }
-func_1beuc(1)
-```
-[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1b1e.html)
 ```{r, echo = TRUE, warning=FALSE, paged.print=FALSE }
 func_1bman(1)
 ```
-[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1b1m.html)
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
-func_1beuc(2)
-```
-[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1b2e.html)
 ```{r, echo = TRUE, warning=FALSE, paged.print=FALSE }
 func_1bman(2)
 ```
-[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1b2m.html)
-
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
-func_1beuc(3)
-```
-[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1b3e.html)
 ```{r, echo = TRUE, warning=FALSE, paged.print=FALSE }
 func_1bman(3)
 ```
-[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1b3m.html)
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
-func_1beuc(4)
-```
-[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1b4e.html)
 ```{r, echo = TRUE, warning=FALSE, paged.print=FALSE }
 func_1bman(4)
 ```
-[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1b4m.html)
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
-func_1beuc(5)
-```
-[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1b5e.html)
 ```{r, echo = TRUE, warning=FALSE, paged.print=FALSE }
 func_1bman(5)
 ```
-[Click here for 3d plot](https://github.com/BU-IE-582/fall18-ilkerkurtulus/blob/master/files/hw2/hw2q1b5m.html)
+
+
+Again for MDS it is really hard to say that classes are separated well. Graphs for manhattan and euclidian distances are different indeed due to one of them measures the path while the other calculates shortest path in R^n space. Thats why with manhattan distance makes distance matrix bigger and observations distributed the space in a larger scale like in graph of bet365.
+
 - Part C
+
+Even though we cant observe a clear distinction for MDS and PCA, most probably MDS is a better choice for this data due to handling nonlinearity. When we compare plots on 1a and 1b for each bookmaker plots seem more convex for MDS which explains nonlinearity.
 
 2. 1x2 Analysis
 
@@ -243,8 +200,8 @@ func_2a = function(n_bm){
   
   mm[, is_1x2 := ifelse(home_goal > away_goal, "1", ifelse(home_goal == away_goal, "x","2"))]
   all_1x2 = na.omit(pdf[mm[, c("matchId", "is_1x2")], on = "matchId"])
-
-  pca = prcomp(all_1x2[, 3:9], center = TRUE, scale. = TRUE)
+  scaled_df = scale(all_1x2[, 3:9])
+  pca = prcomp(scaled_df, center = TRUE, scale. = TRUE)
   print(summary(pca))
   eigs = pca$sdev^2
   exp_var_ratio = eigs/sum(eigs)
@@ -253,12 +210,11 @@ func_2a = function(n_bm){
   plot(cum_exp_var_ratio, type = "l", xlab = "# of Principle Components", ylab = "Cumulative Explained Variance")
   title(paste("1x2 Results - Cumulative Explained Variance Ratio of PCA for " , bookmakers[n_bm], sep = ""))
   
-  all_pca = predict(pca, newdata = all_1x2[,3:9])
-  all_pca3d = all_pca[,1:3]
-  all_pca3d = data.table(all_pca3d)
-  all_pca3d[,is_1x2:= all_1x2$is_1x2]
-  #3d plot with 1st, 2nd and 3rd components
-  plot_ly(all_pca3d,x = ~PC1, y = ~PC2, z = ~PC3 , color = ~is_1x2, type = "scatter3d", mode = "markers") %>% layout(title = paste("Transformed Data with p = 3 PCA and is_1x2 results",bookmakers[n_bm], sep = " "))
+  all_pca = predict(pca, newdata = scaled_df)
+  all_pca2d = all_pca[,1:2]
+  all_pca2d = data.table(all_pca2d)
+  all_pca2d[,is_1x2:= all_1x2$is_1x2]
+  ggplot(all_pca2d, aes(x = PC1, y = PC2, color = is_1x2)) + geom_point() +   ggtitle(paste("Transformed Data with p = 2 PCA and is_1x2 results",bookmakers[n_bm], sep = " "))
 }
 ```
 
@@ -282,34 +238,12 @@ func_2a(4)
 func_2a(5)
 ```
 
+
+Using first 2 components is easy to visualize however in terms of explaining variance of the data its not beneficial. For 1x2 case we can clearly see that there is a pattern when classifying 1x2 result however we for some betmakers such as 10Bet this pattern cannot be observed. With that intuition we need to do deeper research like increasing dimension at PCA or using MDS. 
+
+
 - Part B
 
-Calculation of manhattan and euclidian distances as well as 2D and 3D of them with MDS:
-
-```{r, echo = TRUE}
-bookmakers = c("1xBet", "bet365", "Betfair Exchange", "Pinnacle","10Bet")
-func_2beuc = function(n_bm){
-  df = oo[bookmaker == bookmakers[n_bm]]
-  pdf_1 = dcast(df[(betType != "ou") & (betType != "ah" )], matchId + bookmaker ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
-  
-  x = df[(betType == "ah") & (totalhandicap == "0")]
-  pdf_2 = dcast(x, matchId ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
-  # only choose ou = 2.5 due to different handicap means different odds, so its not useful to mix different handicaps
-  x = df[(betType == "ou") & (totalhandicap == "2.5")]
-  pdf_3 = dcast(x, matchId ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
-  
-  pdf = na.omit(pdf_1[pdf_2, on = "matchId"][pdf_3, on = "matchId"])
-  mm[, is_1x2 := ifelse(home_goal > away_goal, "1", ifelse(home_goal == away_goal, "x","2"))]
-  all_1x2 = na.omit(pdf[mm[, c("matchId", "is_1x2")], on = "matchId"])
-  
-  all_1x2 = all_1x2[, is_1x2:=as.character(is_1x2)]
-  dist_euc = dist(all_1x2[,3:9], method = "euclidian")
-  mds_euc3 = data.table(cmdscale(dist_euc, eig = TRUE, k = 3)$points)
-  mds_euc3[,is_1x2:= all_1x2$is_1x2]
-  
-  plot_ly(mds_euc3,x = ~V1, y = ~V2, z = ~V3 , color = ~is_1x2, type = "scatter3d", mode = "markers") %>% layout(title = paste("MDS Euclidian and is_1x2 results",bookmakers[n_bm], sep = " "))
-}
-```
 
 
 ```{r, echo = TRUE}
@@ -329,11 +263,17 @@ func_2bman = function(n_bm){
   all_1x2 = na.omit(pdf[mm[, c("matchId", "is_1x2")], on = "matchId"])
   
   all_1x2 = all_1x2[, is_1x2:=as.character(is_1x2)]
-  dist_man = dist(all_1x2[,3:9], method = "manhattan")
-  mds_man3 = data.table(cmdscale(dist_man, eig = TRUE, k = 3)$points)
-  mds_man3[,is_1x2:= all_1x2$is_1x2]
   
-  plot_ly(mds_man3,x = ~V1, y = ~V2, z = ~V3 , color = ~is_1x2, type = "scatter3d", mode = "markers") %>% layout(title = paste("MDS Manhattan and is_1x2 results",bookmakers[n_bm], sep = " "))
+  scaled_df = scale(all_1x2[,3:9])
+  dist_man = dist(scaled_df, method = "manhattan")
+  mds_man2 = data.table(cmdscale(dist_man, eig = TRUE, k = 2)$points)
+  mds_man2[,is_1x2:= all_1x2$is_1x2]
+  dist_euc = dist(scaled_df, method = "euclidian")
+  mds_euc2 = data.table(cmdscale(dist_euc, eig = TRUE, k = 2)$points)
+  mds_euc2[,is_1x2:= all_1x2$is_1x2]
+  p1 = qplot(data = mds_euc2, V1, V2, color = is_1x2) + ggtitle( paste("MDS Euclidian and is_1x2 results for",bookmakers[n_bm], sep = " "))
+  p2 = qplot(data = mds_man2, V1, V2, color = is_1x2) + ggtitle( paste("MDS Manhattan and is_1x2 results for",bookmakers[n_bm], sep = " "))
+  grid.arrange(p1,p2)
 }
 ```
 
@@ -343,15 +283,7 @@ func_2bman(1)
 ```
 
 ```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
-func_2beuc(1)
-```
-
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
 func_2bman(2)
-```
-
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
-func_2beuc(2)
 ```
 
 ```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
@@ -359,26 +291,19 @@ func_2bman(3)
 ```
 
 ```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
-func_2beuc(3)
-```
-
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
 func_2bman(4)
-```
-
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
-func_2beuc(4)
 ```
 
 ```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
 func_2bman(5)
 ```
 
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
-func_2beuc(5)
-```
 
-- Part C
+At MDS apporach, like PCA we can again see pattern between 1 and 2 classes separation however for 10Bet its not clear again. So MDS didnt help us. We need to change our dimension to see whether there is a pattern or not. For distance metric we can observe separation mostly in Manhattan. So manhattan is a better choice for this model.
+
+- Part C 
+
+Comparing MDS to PCA, MDS made better dimension reduction for this model as we can see from graphs (1xBet, bet365). This is caused by expanding initial data to higher dimensional distance metric gives us extra information about the data so that explained variance. Except 10Bet, we can see patterns in graphs that can give us an insight when classifying the 1x2 outcome of a match with unsupervised approach.
 
 
 3.Image Analysis
@@ -411,5 +336,124 @@ if (exists("rasterImage")) {
 }
 ```
 
+3.
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+noise = runif(512*512*3, min = 0, max = 1)
+dim(noise) = c(512,512,3)
+nimg = noise + img
+nimg_scaled = (nimg-min(nimg))/(max(nimg)-min(nimg))
+```
 
-3. 
+a)
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+if (exists("rasterImage")) {
+  plot(1:2, type='n')
+  rasterImage(nimg_scaled, 1, 1, 2, 2)
+}
+```
+
+b) 
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+if (exists("rasterImage")) {
+  plot(1:4, type='n')
+  rasterImage(nimg_scaled[,,1], 1, 1, 2, 2)
+  rasterImage(nimg_scaled[,,2], 2, 1, 3, 2)
+  rasterImage(nimg_scaled[,,3], 3, 1, 4, 2)
+}
+```
+
+4) Define greyscale function according to luminosity type:
+
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+to_greyscale = function(img){img[,,1]*0.21 + img[,,2]*0.72 + img[,,3]*0.07}
+grey_nimg = to_greyscale(nimg_scaled)
+```
+
+a) 
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+pca_img = prcomp(grey_nimg, center = TRUE, scale. = TRUE)
+eigs = pca_img$sdev^2
+exp_var_ratio = eigs/sum(eigs)
+cum_exp_var_ratio = cumsum(exp_var_ratio)
+plot(cum_exp_var_ratio)
+```
+
+Even the image has 512 dimensions we can explain it well with 250 components with 0.95 confidence interval. However its still very large dimension for statistical inference.
+b) 
+Construct patch matrix: 
+
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+extract_path = function(data, i,j,n){
+  dw = (n-1)/2
+  as.vector(t(data[(i-dw):(i + dw), (j-dw):(j+dw)]))
+}
+tmp = c()
+for(i in 2:511){
+  for(j in 2:511){
+    x = extract_path(grey_nimg,i,j,3)
+    tmp = c(tmp, x)
+  }
+}
+res = matrix(tmp, nrow = 260100,byrow = TRUE)
+```
+
+Apply pca and plot:
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+pca_res = prcomp(res,center=TRUE, scale. = TRUE)
+
+#1st component
+pca_res1d = pca_res$x[,1]
+pca_mat = matrix(pca_res1d, nrow = 510, ncol = 510, byrow = TRUE)
+pca_mat_scaled = (pca_mat-min(pca_mat))/(max(pca_mat)-min(pca_mat))
+if (exists("rasterImage")) {
+  plot(1:2, type='n')
+  rasterImage(pca_mat_scaled, 1, 1, 2, 2)
+}
+```
+
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+#2nd component
+pca_res1d = pca_res$x[,2]
+pca_mat = matrix(pca_res1d, nrow = 510, ncol = 510, byrow = TRUE)
+pca_mat_scaled = (pca_mat-min(pca_mat))/(max(pca_mat)-min(pca_mat))
+if (exists("rasterImage")) {
+  plot(1:2, type='n')
+  rasterImage(pca_mat_scaled, 1, 1, 2, 2)
+}
+```
+
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+#3rd component
+pca_res1d = pca_res$x[,3]
+pca_mat = matrix(pca_res1d, nrow = 510, ncol = 510, byrow = TRUE)
+pca_mat_scaled = (pca_mat-min(pca_mat))/(max(pca_mat)-min(pca_mat))
+if (exists("rasterImage")) {
+  plot(1:2, type='n')
+  rasterImage(pca_mat_scaled, 1, 1, 2, 2)
+}
+```
+
+
+c) 
+```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+ev1 = pca_res$rotation[,1]
+ev_scaled1 = (ev1-min(ev1))/(max(ev1)-min(ev1))
+mat_ev1 = matrix(ev_scaled1, nrow = 3, ncol = 3, byrow = TRUE)
+
+ev2 = pca_res$rotation[,2]
+ev_scaled2 = (ev2-min(ev2))/(max(ev2)-min(ev2))
+mat_ev2 = matrix(ev_scaled2, nrow = 3, ncol = 3, byrow = TRUE)
+
+ev3 = pca_res$rotation[,3]
+ev_scaled3 = (ev3-min(ev3))/(max(ev3)-min(ev3))
+mat_ev3 = matrix(ev_scaled3, nrow = 3, ncol = 3, byrow = TRUE)
+
+
+if (exists("rasterImage")) {
+  plot(1:4, type='n')
+  rasterImage(mat_ev1, 1, 1, 2, 2)
+  rasterImage(mat_ev2, 2, 1, 3, 2)
+  rasterImage(mat_ev3, 3, 1, 4, 2)
+}
+```
+
