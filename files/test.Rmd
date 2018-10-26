@@ -1,0 +1,42 @@
+---
+title: "HW2 test"
+author: Ilker Kurtulus - IE582 - Fall 2018
+---
+```{r,echo=FALSE,results="hide"}
+library(knitr)
+opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+```
+```{r eval=TRUE, message=FALSE, warning=FALSE}
+library(data.table)
+library(anytime)
+library(stringr)
+library(dplyr)
+library(gridExtra)
+library(ggplot2)
+library(plotly)
+library(jpeg)
+library(fields)
+library(formatR)
+```
+
+
+test test 
+
+```{r eval=TRUE}
+
+oo = readRDS("/Users/ilkerkurtulus/Documents/cse-master/ie582/data/hw1/df9b1196-e3cf-4cc7-9159-f236fe738215_odd_details.rds")
+oo = data.table(oo)
+oo$date = anytime(oo$date)
+mm = readRDS("/Users/ilkerkurtulus/Documents/cse-master/ie582/data/hw1/df9b1196-e3cf-4cc7-9159-f236fe738215_matches.rds")
+mm = data.table(mm)
+mm[, c("leagueId","type"):=NULL]
+mm$date = anytime(mm$date)
+mm = mm[is.na(mm$score)==FALSE]
+mm = mm[, c("home_goal", "away_goal") := tstrsplit(score, ":", fixed=TRUE)]
+mm$home_goal = as.numeric(mm$home_goal)
+mm$away_goal = as.numeric(mm$away_goal)
+mm[, total_goals:=home_goal+away_goal]
+mm = mutate(mm, is_over = ifelse(total_goals > 2.5, 1,0))
+mm = data.table(mm)
+head(mm)
+```
