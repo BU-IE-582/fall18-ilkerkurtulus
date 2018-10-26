@@ -40,3 +40,62 @@ mm = mutate(mm, is_over = ifelse(total_goals > 2.5, 1,0))
 mm = data.table(mm)
 head(mm)
 ```
+
+2. 1x2 Analysis
+
+Feature engineering for this part:
+
+- Part A
+```{r eval=TRUE}
+bookmakers = c("1xBet", "bet365", "Betfair Exchange", "Pinnacle","10Bet")
+func_2a = function(n_bm){
+  df = oo[bookmaker == bookmakers[n_bm]]
+  pdf_1 = dcast(df[(betType != "ou") & (betType != "ah" )], matchId + bookmaker ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  
+  x = df[(betType == "ah") & (totalhandicap == "0")]
+  pdf_2 = dcast(x, matchId ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  # only choose ou = 2.5 due to different handicap means different odds, so its not useful to mix different handicaps
+  x = df[(betType == "ou") & (totalhandicap == "2.5")]
+  pdf_3 = dcast(x, matchId ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  
+  pdf = na.omit(pdf_1[pdf_2, on = "matchId"][pdf_3, on = "matchId"])
+  
+  mm[, is_1x2 := ifelse(home_goal > away_goal, "1", ifelse(home_goal == away_goal, "x","2"))]
+  all_1x2 = na.omit(pdf[mm[, c("matchId", "is_1x2")], on = "matchId"])
+  scaled_df = scale(all_1x2[, 3:9])
+  pca = prcomp(scaled_df, center = TRUE, scale. = TRUE)
+  print(summary(pca))
+  eigs = pca$sdev^2
+  exp_var_ratio = eigs/sum(eigs)
+  cum_exp_var_ratio = cumsum(exp_var_ratio)
+  
+  plot(cum_exp_var_ratio, type = "l", xlab = "# of Principle Components", ylab = "Cumulative Explained Variance")
+  title(paste("1x2 Results - Cumulative Explained Variance Ratio of PCA for " , bookmakers[n_bm], sep = ""))
+  
+  all_pca = predict(pca, newdata = scaled_df)
+  all_pca2d = all_pca[,1:2]
+  all_pca2d = data.table(all_pca2d)
+  all_pca2d[,is_1x2:= all_1x2$is_1x2]
+  ggplot(all_pca2d, aes(x = PC1, y = PC2, color = is_1x2)) + geom_point() +   ggtitle(paste("Transformed Data with p = 2 PCA and is_1x2 results",bookmakers[n_bm], sep = " "))
+}
+```
+
+```{r eval=TRUE}
+func_2a(1)
+```
+
+```{r eval=TRUE}
+func_2a(2)
+```
+
+```{r eval=TRUE}
+func_2a(3)
+```
+
+```{r eval=TRUE}
+func_2a(4)
+```
+
+```{r eval=TRUE}
+func_2a(5)
+```
