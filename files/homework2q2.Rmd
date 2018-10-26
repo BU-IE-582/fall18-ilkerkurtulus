@@ -1,0 +1,171 @@
+---
+title: "HW2 Q2"
+author: Ilker Kurtulus - IE582 - Fall 2018
+---
+```{r,echo=FALSE,results="hide"}
+library(knitr)
+opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+```
+
+```{r eval=TRUE, message=FALSE, warning=FALSE}
+library(data.table)
+library(anytime)
+library(stringr)
+library(dplyr)
+library(gridExtra)
+library(ggplot2)
+library(plotly)
+library(jpeg)
+library(fields)
+library(formatR)
+```
+
+```{r eval=TRUE}
+
+oo = readRDS("/Users/ilkerkurtulus/Documents/cse-master/ie582/data/hw1/df9b1196-e3cf-4cc7-9159-f236fe738215_odd_details.rds")
+oo = data.table(oo)
+oo$date = anytime(oo$date)
+mm = readRDS("/Users/ilkerkurtulus/Documents/cse-master/ie582/data/hw1/df9b1196-e3cf-4cc7-9159-f236fe738215_matches.rds")
+mm = data.table(mm)
+mm[, c("leagueId","type"):=NULL]
+mm$date = anytime(mm$date)
+mm = mm[is.na(mm$score)==FALSE]
+mm = mm[, c("home_goal", "away_goal") := tstrsplit(score, ":", fixed=TRUE)]
+mm$home_goal = as.numeric(mm$home_goal)
+mm$away_goal = as.numeric(mm$away_goal)
+mm[, total_goals:=home_goal+away_goal]
+mm = mutate(mm, is_over = ifelse(total_goals > 2.5, 1,0))
+mm = data.table(mm)
+head(mm)
+```
+
+
+
+2. 1x2 Analysis
+
+Feature engineering for this part:
+
+- Part A
+```{r eval=TRUE}
+bookmakers = c("1xBet", "bet365", "Betfair Exchange", "Pinnacle","10Bet")
+func_2a = function(n_bm){
+  df = oo[bookmaker == bookmakers[n_bm]]
+  pdf_1 = dcast(df[(betType != "ou") & (betType != "ah" )], matchId + bookmaker ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  
+  x = df[(betType == "ah") & (totalhandicap == "0")]
+  pdf_2 = dcast(x, matchId ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  # only choose ou = 2.5 due to different handicap means different odds, so its not useful to mix different handicaps
+  x = df[(betType == "ou") & (totalhandicap == "2.5")]
+  pdf_3 = dcast(x, matchId ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  
+  pdf = na.omit(pdf_1[pdf_2, on = "matchId"][pdf_3, on = "matchId"])
+  
+  mm[, is_1x2 := ifelse(home_goal > away_goal, "1", ifelse(home_goal == away_goal, "x","2"))]
+  all_1x2 = na.omit(pdf[mm[, c("matchId", "is_1x2")], on = "matchId"])
+  scaled_df = scale(all_1x2[, 3:9])
+  pca = prcomp(scaled_df, center = TRUE, scale. = TRUE)
+  print(summary(pca))
+  eigs = pca$sdev^2
+  exp_var_ratio = eigs/sum(eigs)
+  cum_exp_var_ratio = cumsum(exp_var_ratio)
+  
+  plot(cum_exp_var_ratio, type = "l", xlab = "# of Principle Components", ylab = "Cumulative Explained Variance")
+  title(paste("1x2 Results - Cumulative Explained Variance Ratio of PCA for " , bookmakers[n_bm], sep = ""))
+  
+  all_pca = predict(pca, newdata = scaled_df)
+  all_pca2d = all_pca[,1:2]
+  all_pca2d = data.table(all_pca2d)
+  all_pca2d[,is_1x2:= all_1x2$is_1x2]
+  ggplot(all_pca2d, aes(x = PC1, y = PC2, color = is_1x2)) + geom_point() +   ggtitle(paste("Transformed Data with p = 2 PCA and is_1x2 results",bookmakers[n_bm], sep = " "))
+}
+```
+
+```{r eval=TRUE}
+func_2a(1)
+```
+
+```{r eval=TRUE}
+func_2a(2)
+```
+
+```{r eval=TRUE}
+func_2a(3)
+```
+
+```{r eval=TRUE}
+func_2a(4)
+```
+
+```{r eval=TRUE}
+func_2a(5)
+```
+
+
+Using first 2 components is easy to visualize however in terms of explaining variance of the data its not beneficial. For 1x2 case we can clearly see that there is a pattern when classifying 1x2 result however we for some betmakers such as 10Bet this pattern cannot be observed. With that intuition we need to do deeper research like increasing dimension at PCA or using MDS. 
+
+
+- Part B
+
+
+
+```{r eval=TRUE}
+bookmakers = c("1xBet", "bet365", "Betfair Exchange", "Pinnacle","10Bet")
+func_2bman = function(n_bm){
+  df = oo[bookmaker == bookmakers[n_bm]]
+  pdf_1 = dcast(df[(betType != "ou") & (betType != "ah" )], matchId + bookmaker ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  
+  x = df[(betType == "ah") & (totalhandicap == "0")]
+  pdf_2 = dcast(x, matchId ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  # only choose ou = 2.5 due to different handicap means different odds, so its not useful to mix different handicaps
+  x = df[(betType == "ou") & (totalhandicap == "2.5")]
+  pdf_3 = dcast(x, matchId ~ betType + oddtype, value.var = c("odd"),  fun.aggregate = mean)
+  
+  pdf = na.omit(pdf_1[pdf_2, on = "matchId"][pdf_3, on = "matchId"])
+  mm[, is_1x2 := ifelse(home_goal > away_goal, "1", ifelse(home_goal == away_goal, "x","2"))]
+  all_1x2 = na.omit(pdf[mm[, c("matchId", "is_1x2")], on = "matchId"])
+  
+  all_1x2 = all_1x2[, is_1x2:=as.character(is_1x2)]
+  
+  scaled_df = scale(all_1x2[,3:9])
+  dist_man = dist(scaled_df, method = "manhattan")
+  mds_man2 = data.table(cmdscale(dist_man, eig = TRUE, k = 2)$points)
+  mds_man2[,is_1x2:= all_1x2$is_1x2]
+  dist_euc = dist(scaled_df, method = "euclidian")
+  mds_euc2 = data.table(cmdscale(dist_euc, eig = TRUE, k = 2)$points)
+  mds_euc2[,is_1x2:= all_1x2$is_1x2]
+  p1 = qplot(data = mds_euc2, V1, V2, color = is_1x2) + ggtitle( paste("MDS Euclidian and is_1x2 results for",bookmakers[n_bm], sep = " "))
+  p2 = qplot(data = mds_man2, V1, V2, color = is_1x2) + ggtitle( paste("MDS Manhattan and is_1x2 results for",bookmakers[n_bm], sep = " "))
+  grid.arrange(p1,p2)
+}
+```
+
+
+```{r eval=TRUE}
+func_2bman(1)
+```
+
+```{r eval=TRUE}
+func_2bman(2)
+```
+
+```{r eval=TRUE}
+func_2bman(3)
+```
+
+```{r eval=TRUE}
+func_2bman(4)
+```
+
+```{r eval=TRUE}
+func_2bman(5)
+```
+
+
+At MDS apporach, like PCA we can again see pattern between 1 and 2 classes separation however for 10Bet its not clear again. So MDS didnt help us. We need to change our dimension to see whether there is a pattern or not. For distance metric we can observe separation mostly in Manhattan. So manhattan is a better choice for this model.
+
+- Part C 
+
+Comparing MDS to PCA, MDS made better dimension reduction for this model as we can see from graphs (1xBet, bet365). This is caused by expanding initial data to higher dimensional distance metric gives us extra information about the data so that explained variance. Except 10Bet, we can see patterns in graphs that can give us an insight when classifying the 1x2 outcome of a match with unsupervised approach.
+
+
+
