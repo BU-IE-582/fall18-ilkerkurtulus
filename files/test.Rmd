@@ -81,3 +81,19 @@ func_2a = function(n_bm){
 ```{r eval=TRUE}
 func_2a(1)
 ```
+
+```{r eval=TRUE}
+func_2a(2)
+```
+
+```{r eval=TRUE}
+func_2a(3)
+```
+
+```{r eval=TRUE}
+func_2a(4)
+```
+
+```{r eval=TRUE}
+func_2a(5)
+```
