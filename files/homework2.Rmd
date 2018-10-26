@@ -1,18 +1,16 @@
 ---
-title: "HW 2"
+title: "HW2"
 author: Ilker Kurtulus - IE582 - Fall 2018
 ---
-
 ```{r,echo=FALSE,results="hide"}
 library(knitr)
 opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
 ```
 
-
 1.Over - Under Analysis
 
 - Part A
-```{r, echo = FALSE, include=FALSE}
+```{r eval=TRUE}
 library(data.table)
 library(anytime)
 library(stringr)
@@ -25,7 +23,7 @@ library(fields)
 library(formatR)
 ```
 
-```{r, echo = TRUE}
+```{r eval=TRUE}
 
 oo = readRDS("/Users/ilkerkurtulus/Documents/cse-master/ie582/data/hw1/df9b1196-e3cf-4cc7-9159-f236fe738215_odd_details.rds")
 oo = data.table(oo)
@@ -49,17 +47,17 @@ Different handicap values mean different events with different probability. So w
 
 While choosing bookmakers we need to care that bookmakers should provide odds of above handicap and bettype. To do that lets print them and choose:
 
-```{r, echo = TRUE}
+```{r eval=TRUE}
 oo[(betType == "ou") & (totalhandicap == "2.5"), .N, by = bookmaker]
 ```
 
-```{r, echo = TRUE}
+```{r eval=TRUE}
 oo[(betType == "ah") & (totalhandicap == "0"), .N, by = bookmaker]
 ```
 
 So we can select 5 bookmakers as 1xBet, bet365, Betfair Exchange, Pinnacle and 10Bet
 
-```{r, echo = TRUE}
+```{r eval=TRUE}
 bookmakers = c("1xBet", "bet365", "Betfair Exchange", "Pinnacle","10Bet")
 func_1a = function(n_bm){
   df = oo[bookmaker == bookmakers[n_bm]]
@@ -95,25 +93,25 @@ func_1a = function(n_bm){
 
 
 
-```{r echo=TRUE, paged.print=FALSE}
+```{r eval=TRUE}
 func_1a(1)
 ```
 
 
-```{r, echo = TRUE, paged.print=FALSE}
+```{r eval=TRUE}
 func_1a(2)
 ```
 
 
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 func_1a(3)
 ```
 
-```{r, echo = TRUE, paged.print=FALSE}
+```{r eval=TRUE}
 func_1a(4)
 ```
 
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 func_1a(5)
 ```
 
@@ -127,7 +125,7 @@ When we look at the scatter plots we cant find a distinction between over/under 
 
 Calculation of manhattan and euclidian distances as well as 2D and 3D of them with MDS:
 
-```{r, echo = TRUE}
+```{r eval=TRUE}
 bookmakers = c("1xBet", "bet365", "Betfair Exchange", "Pinnacle","10Bet")
 func_1bman= function(n_bm){
   df = oo[bookmaker == bookmakers[n_bm]]
@@ -156,19 +154,19 @@ func_1bman= function(n_bm){
 }
 ```
 
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE }
+```{r eval=TRUE}
 func_1bman(1)
 ```
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE }
+```{r eval=TRUE}
 func_1bman(2)
 ```
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE }
+```{r eval=TRUE}
 func_1bman(3)
 ```
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE }
+```{r eval=TRUE}
 func_1bman(4)
 ```
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE }
+```{r eval=TRUE}
 func_1bman(5)
 ```
 
@@ -184,7 +182,7 @@ Even though we cant observe a clear distinction for MDS and PCA, most probably M
 Feature engineering for this part:
 
 - Part A
-```{r, echo = TRUE}
+```{r eval=TRUE}
 bookmakers = c("1xBet", "bet365", "Betfair Exchange", "Pinnacle","10Bet")
 func_2a = function(n_bm){
   df = oo[bookmaker == bookmakers[n_bm]]
@@ -218,23 +216,23 @@ func_2a = function(n_bm){
 }
 ```
 
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 func_2a(1)
 ```
 
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 func_2a(2)
 ```
 
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 func_2a(3)
 ```
 
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 func_2a(4)
 ```
 
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 func_2a(5)
 ```
 
@@ -246,7 +244,7 @@ Using first 2 components is easy to visualize however in terms of explaining var
 
 
 
-```{r, echo = TRUE}
+```{r eval=TRUE}
 bookmakers = c("1xBet", "bet365", "Betfair Exchange", "Pinnacle","10Bet")
 func_2bman = function(n_bm){
   df = oo[bookmaker == bookmakers[n_bm]]
@@ -278,23 +276,23 @@ func_2bman = function(n_bm){
 ```
 
 
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 func_2bman(1)
 ```
 
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 func_2bman(2)
 ```
 
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 func_2bman(3)
 ```
 
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 func_2bman(4)
 ```
 
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 func_2bman(5)
 ```
 
@@ -309,17 +307,17 @@ Comparing MDS to PCA, MDS made better dimension reduction for this model as we c
 3.Image Analysis
 
 1. Read Image
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 img = readJPEG("/Users/ilkerkurtulus/Downloads/IMG_7955.jpg")
 ```
 
 2. 
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 str(img)
 dim(img)
 ```
 a) 
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 if (exists("rasterImage")) {
   plot(1:2, type='n')
   rasterImage(img, 1, 1, 2, 2)
@@ -327,7 +325,7 @@ if (exists("rasterImage")) {
 ```
 
 b) 
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 if (exists("rasterImage")) {
   plot(1:4, type='n')
   rasterImage(img[,,1], 1, 1, 2, 2)
@@ -337,7 +335,7 @@ if (exists("rasterImage")) {
 ```
 
 3.
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 noise = runif(512*512*3, min = 0, max = 1)
 dim(noise) = c(512,512,3)
 nimg = noise + img
@@ -345,7 +343,7 @@ nimg_scaled = (nimg-min(nimg))/(max(nimg)-min(nimg))
 ```
 
 a)
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 if (exists("rasterImage")) {
   plot(1:2, type='n')
   rasterImage(nimg_scaled, 1, 1, 2, 2)
@@ -353,7 +351,7 @@ if (exists("rasterImage")) {
 ```
 
 b) 
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 if (exists("rasterImage")) {
   plot(1:4, type='n')
   rasterImage(nimg_scaled[,,1], 1, 1, 2, 2)
@@ -364,13 +362,13 @@ if (exists("rasterImage")) {
 
 4) Define greyscale function according to luminosity type:
 
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 to_greyscale = function(img){img[,,1]*0.21 + img[,,2]*0.72 + img[,,3]*0.07}
 grey_nimg = to_greyscale(nimg_scaled)
 ```
 
 a) 
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 pca_img = prcomp(grey_nimg, center = TRUE, scale. = TRUE)
 eigs = pca_img$sdev^2
 exp_var_ratio = eigs/sum(eigs)
@@ -382,7 +380,7 @@ Even the image has 512 dimensions we can explain it well with 250 components wit
 b) 
 Construct patch matrix: 
 
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 extract_path = function(data, i,j,n){
   dw = (n-1)/2
   as.vector(t(data[(i-dw):(i + dw), (j-dw):(j+dw)]))
@@ -398,7 +396,7 @@ res = matrix(tmp, nrow = 260100,byrow = TRUE)
 ```
 
 Apply pca and plot:
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 pca_res = prcomp(res,center=TRUE, scale. = TRUE)
 
 #1st component
@@ -411,7 +409,7 @@ if (exists("rasterImage")) {
 }
 ```
 
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 #2nd component
 pca_res1d = pca_res$x[,2]
 pca_mat = matrix(pca_res1d, nrow = 510, ncol = 510, byrow = TRUE)
@@ -422,7 +420,7 @@ if (exists("rasterImage")) {
 }
 ```
 
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 #3rd component
 pca_res1d = pca_res$x[,3]
 pca_mat = matrix(pca_res1d, nrow = 510, ncol = 510, byrow = TRUE)
@@ -435,7 +433,7 @@ if (exists("rasterImage")) {
 
 
 c) 
-```{r, echo = TRUE, warning=FALSE, paged.print=FALSE}
+```{r eval=TRUE}
 ev1 = pca_res$rotation[,1]
 ev_scaled1 = (ev1-min(ev1))/(max(ev1)-min(ev1))
 mat_ev1 = matrix(ev_scaled1, nrow = 3, ncol = 3, byrow = TRUE)
