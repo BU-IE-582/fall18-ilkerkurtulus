@@ -1,0 +1,267 @@
+---
+title: "HW3"
+author: Ilker Kurtulus - IE582 - Fall 2018
+---
+```{r,echo=FALSE,results="hide"}
+library(knitr)
+opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+```
+
+```{r eval=TRUE, message=FALSE, warning=FALSE}
+library(data.table)
+library(ggplot2)
+library(plotly)
+library(FNN)
+library(caret)
+library(StatMeasures)
+library(penalized)
+```
+
+```{r eval=TRUE}
+setwd('/Users/ilkerkurtulus/Documents/cse-master/ie582/data/hw3-gesture')
+
+fname = "uWaveGestureLibrary_X_TRAIN"
+xtr <- as.matrix(read.table(fname))
+xtr = data.table(xtr)
+
+fname = "uWaveGestureLibrary_Y_TRAIN"
+ytr <- as.matrix(read.table(fname))
+ytr = data.table(ytr)
+
+fname = "uWaveGestureLibrary_Z_TRAIN"
+ztr <- as.matrix(read.table(fname))
+ztr = data.table(ztr)
+```
+
+1. A
+
+```{r eval=TRUE}
+gesture_number = 1
+index_n = 1
+dt = data.table(t(xtr[V1 == gesture_number][index_n,2:316]), t(ytr[V1 == gesture_number][index_n,2:316]),t(ztr[V1 == gesture_number][index_n,2:316]))
+names(dt) = c("x","y","z")
+dtc = data.table(cumsum(t(xtr[V1 == gesture_number][index_n,2:316])), cumsum(t(ytr[V1 == gesture_number][index_n,2:316])), cumsum(t(ztr[V1   == gesture_number][index_n,2:316])))
+names(dtc) = c("x","y","z")
+
+plot_ly(dt, x=~x, y=~y, z=~z,type = "scatter3d", mode = "markers") %>% layout(title = paste(gesture_number, "th gesture class - acceleration", sep = ""))
+plot_ly(dtc, x=~x, y=~y, z=~z,type = "scatter3d", mode = "markers") %>% layout(title = paste(gesture_number, "th gesture class - velocity", sep = ""))
+
+gesture_number = 2
+index_n = 1
+dt = data.table(t(xtr[V1 == gesture_number][index_n,2:316]), t(ytr[V1 == gesture_number][index_n,2:316]),t(ztr[V1 == gesture_number][index_n,2:316]))
+names(dt) = c("x","y","z")
+dtc = data.table(cumsum(t(xtr[V1 == gesture_number][index_n,2:316])), cumsum(t(ytr[V1 == gesture_number][index_n,2:316])), cumsum(t(ztr[V1   == gesture_number][index_n,2:316])))
+names(dtc) = c("x","y","z")
+
+plot_ly(dt, x=~x, y=~y, z=~z,type = "scatter3d", mode = "markers") %>% layout(title = paste(gesture_number, "th gesture class - acceleration", sep = ""))
+plot_ly(dtc, x=~x, y=~y, z=~z,type = "scatter3d", mode = "markers") %>% layout(title = paste(gesture_number, "th gesture class - velocity", sep = ""))
+
+gesture_number = 3
+index_n = 1
+dt = data.table(t(xtr[V1 == gesture_number][index_n,2:316]), t(ytr[V1 == gesture_number][index_n,2:316]),t(ztr[V1 == gesture_number][index_n,2:316]))
+names(dt) = c("x","y","z")
+dtc = data.table(cumsum(t(xtr[V1 == gesture_number][index_n,2:316])), cumsum(t(ytr[V1 == gesture_number][index_n,2:316])), cumsum(t(ztr[V1   == gesture_number][index_n,2:316])))
+names(dtc) = c("x","y","z")
+
+plot_ly(dt, x=~x, y=~y, z=~z,type = "scatter3d", mode = "markers") %>% layout(title = paste(gesture_number, "th gesture class - acceleration", sep = ""))
+plot_ly(dtc, x=~x, y=~y, z=~z,type = "scatter3d", mode = "markers") %>% layout(title = paste(gesture_number, "th gesture class - velocity", sep = ""))
+
+gesture_number = 4
+index_n = 1
+dt = data.table(t(xtr[V1 == gesture_number][index_n,2:316]), t(ytr[V1 == gesture_number][index_n,2:316]),t(ztr[V1 == gesture_number][index_n,2:316]))
+names(dt) = c("x","y","z")
+dtc = data.table(cumsum(t(xtr[V1 == gesture_number][index_n,2:316])), cumsum(t(ytr[V1 == gesture_number][index_n,2:316])), cumsum(t(ztr[V1   == gesture_number][index_n,2:316])))
+names(dtc) = c("x","y","z")
+
+plot_ly(dt, x=~x, y=~y, z=~z,type = "scatter3d", mode = "markers") %>% layout(title = paste(gesture_number, "th gesture class - acceleration", sep = ""))
+plot_ly(dtc, x=~x, y=~y, z=~z,type = "scatter3d", mode = "markers") %>% layout(title = paste(gesture_number, "th gesture class - velocity", sep = ""))
+
+gesture_number = 5
+index_n = 1
+dt = data.table(t(xtr[V1 == gesture_number][index_n,2:316]), t(ytr[V1 == gesture_number][index_n,2:316]),t(ztr[V1 == gesture_number][index_n,2:316]))
+names(dt) = c("x","y","z")
+dtc = data.table(cumsum(t(xtr[V1 == gesture_number][index_n,2:316])), cumsum(t(ytr[V1 == gesture_number][index_n,2:316])), cumsum(t(ztr[V1   == gesture_number][index_n,2:316])))
+names(dtc) = c("x","y","z")
+
+plot_ly(dt, x=~x, y=~y, z=~z,type = "scatter3d", mode = "markers") %>% layout(title = paste(gesture_number, "th gesture class - acceleration", sep = ""))
+plot_ly(dtc, x=~x, y=~y, z=~z,type = "scatter3d", mode = "markers") %>% layout(title = paste(gesture_number, "th gesture class - velocity", sep = ""))
+
+gesture_number = 6
+index_n = 1
+dt = data.table(t(xtr[V1 == gesture_number][index_n,2:316]), t(ytr[V1 == gesture_number][index_n,2:316]),t(ztr[V1 == gesture_number][index_n,2:316]))
+names(dt) = c("x","y","z")
+dtc = data.table(cumsum(t(xtr[V1 == gesture_number][index_n,2:316])), cumsum(t(ytr[V1 == gesture_number][index_n,2:316])), cumsum(t(ztr[V1   == gesture_number][index_n,2:316])))
+names(dtc) = c("x","y","z")
+
+plot_ly(dt, x=~x, y=~y, z=~z,type = "scatter3d", mode = "markers") %>% layout(title = paste(gesture_number, "th gesture class - acceleration", sep = ""))
+plot_ly(dtc, x=~x, y=~y, z=~z,type = "scatter3d", mode = "markers") %>% layout(title = paste(gesture_number, "th gesture class - velocity", sep = ""))
+
+gesture_number = 7
+index_n = 1
+dt = data.table(t(xtr[V1 == gesture_number][index_n,2:316]), t(ytr[V1 == gesture_number][index_n,2:316]),t(ztr[V1 == gesture_number][index_n,2:316]))
+names(dt) = c("x","y","z")
+dtc = data.table(cumsum(t(xtr[V1 == gesture_number][index_n,2:316])), cumsum(t(ytr[V1 == gesture_number][index_n,2:316])), cumsum(t(ztr[V1   == gesture_number][index_n,2:316])))
+names(dtc) = c("x","y","z")
+
+plot_ly(dt, x=~x, y=~y, z=~z,type = "scatter3d", mode = "markers") %>% layout(title = paste(gesture_number, "th gesture class - acceleration", sep = ""))
+plot_ly(dtc, x=~x, y=~y, z=~z,type = "scatter3d", mode = "markers") %>% layout(title = paste(gesture_number, "th gesture class - velocity", sep = ""))
+
+gesture_number = 8
+index_n = 1
+dt = data.table(t(xtr[V1 == gesture_number][index_n,2:316]), t(ytr[V1 == gesture_number][index_n,2:316]),t(ztr[V1 == gesture_number][index_n,2:316]))
+names(dt) = c("x","y","z")
+dtc = data.table(cumsum(t(xtr[V1 == gesture_number][index_n,2:316])), cumsum(t(ytr[V1 == gesture_number][index_n,2:316])), cumsum(t(ztr[V1   == gesture_number][index_n,2:316])))
+names(dtc) = c("x","y","z")
+
+plot_ly(dt, x=~x, y=~y, z=~z,type = "scatter3d", mode = "markers") %>% layout(title = paste(gesture_number, "th gesture class - acceleration", sep = ""))
+plot_ly(dtc, x=~x, y=~y, z=~z,type = "scatter3d", mode = "markers") %>% layout(title = paste(gesture_number, "th gesture class - velocity", sep = ""))
+```
+
+1. B
+
+. 
+
+```{r eval=TRUE}
+names(xtr) = paste("x_",names(xtr),sep = "")
+names(ytr) = paste("y_",names(ytr),sep = "")
+names(ztr) = paste("z_",names(ztr),sep = "")
+full_data = cbind(xtr[,2:316], ytr[,2:316], ztr[,2:316])
+full_data[, class:= xtr[,1]]
+full_data[, class:= as.factor(class)]
+```
+
+One can tune parameters (distances and optimal k values) by below code, however it is extremely computationally expensive. Even i couldnt run in my pc for 10 different k values. So i will share the code with eval = FALSE and proceed with knn with euclidian distance
+
+```{r eval=FALSE}
+trControl = trainControl(method  = "cv", number  = 10)
+fit = train(
+class ~ .,
+method     = "kknn",
+preProcess = c("center", "scale"),
+tuneGrid   = expand.grid(kmax = 1:10, distance = 1:2, kernel = "rectangular"),
+trControl  = trControl,
+metric     = "Accuracy",
+data       = full_data
+)
+```
+
+```{r eval=TRUE}
+t1 = Sys.time()
+trControl = trainControl(method  = "cv", number  = 10)
+fit = train(
+class ~ .,
+method     = "knn",
+preProcess = c("center", "scale"),
+tuneGrid   = expand.grid(k = 1:10),
+trControl  = trControl,
+metric     = "Accuracy",
+data       = full_data
+)
+t2 = Sys.time()
+fit$results
+
+t2 - t1 
+```
+
+
+The highest accuracy results from k = 1 but for more generalizable model we can choose k = 5. 
+
+1. C
+
+Read test data:
+```{r eval = TRUE}
+setwd('/Users/ilkerkurtulus/Documents/cse-master/ie582/data/hw3-gesture')
+fname = "uWaveGestureLibrary_X_TEST"
+xtest <- as.matrix(read.table(fname))
+xtest = data.table(xtest)
+
+fname = "uWaveGestureLibrary_Y_TEST"
+ytest <- as.matrix(read.table(fname))
+ytest = data.table(ytest)
+
+fname = "uWaveGestureLibrary_Z_TEST"
+ztest <- as.matrix(read.table(fname))
+ztest = data.table(ztest)
+
+names(xtest) = paste("x_",names(xtest),sep = "")
+names(ytest) = paste("y_",names(ytest),sep = "")
+names(ztest) = paste("z_",names(ztest),sep = "")
+
+test_data = cbind(xtest[,2:316], ytest[,2:316], ztest[,2:316])
+test_data[, class:= xtest[,1]]
+test_data[, class:= as.factor(class)]
+
+t3 = Sys.time()
+test_predictions = predict(fit, test_data)
+t4 = Sys.time()
+confusionMatrix(test_data$class, test_predictions)
+t4 - t3 
+```
+
+2. A
+
+```{r eval = TRUE}
+setwd('/Users/ilkerkurtulus/Documents/cse-master/ie582/data/NN_Classification')
+fname = 'ecgTRAIN'
+train = data.table(as.matrix(read.table(fname)))
+train[, V1:= as.factor(train$V1)]
+X_train = train[, 2:dim(train)[2]]
+y_train = train$V1
+lambda2=exp (seq (-6, 1, length = 10))
+fit = cvl(y_train, X_train, lambda1 = 1, lambda2 = lambda2, fusedl = TRUE, fold = 10, model = "logistic")
+
+# read test data
+fname = 'ecgTEST'
+test = data.table(as.matrix(read.table(fname)))
+test[, V1:= as.factor(test$V1)]
+X_test = test[, 2:dim(test)[2]]
+y_test = test$V1
+
+# prediction
+y_pred = predict(fit$fullfit, X_test)
+y_pred = as.factor(ifelse(y_pred >= 0.5, 1, -1))
+confusionMatrix(y_test, y_pred)
+```
+
+2. B
+```{r eval = TRUE}
+print(fit)
+```
+
+"97 regression coefficients of which 40 are non-zero" which states that 57 coefficients are 0 so they are eliminited by feature selection (lasso) which improves our model against curse of dimensionallity.
+
+2. C
+
+We can find delta signals from shifting signals and substraction them between:
+```{r eval = TRUE, warning=FALSE}
+diff = train[2:100,] - train[1:99,]
+diff[,V1:= train[2:100,1]]
+
+diff_X_train = diff[, 2:dim(train)[2]]
+diff_y_train = diff$V1
+# fit
+lambda2=exp (seq (-6, 1, length = 10))
+fit_shifted = cvl(diff_y_train, diff_X_train, lambda1 = 1, lambda2 = lambda2, fusedl = TRUE, fold = 10, model = "logistic")
+
+# test
+diff_test = test[2:100,] - test[1:99,]
+diff_test[,V1:= test[2:100,1]]
+
+diff_X_test = diff_test[, 2:dim(test)[2]]
+diff_y_test = diff_test$V1
+
+# prediction
+diff_y_pred = predict(fit_shifted$fullfit, diff_X_test)
+diff_y_pred = as.factor(ifelse(diff_y_pred >= 0.5, 1, -1))
+confusionMatrix(diff_y_test, diff_y_pred)
+```
+
+
+Accuracy descreases to 0.70 from 0.83 due to information loss on shifted operation. Actually window differences improves model however this improvement happens when this difference feature add to original information not replacing them. 
+
+2. D
+```{r eval = TRUE}
+print(fit_shifted)
+```
+
+"97 regression coefficients of which 34 are non-zero" which states that 63 coefficients are 0 so they are eliminited by feature selection (lasso) which improves our model against curse of dimensionallity. 
