@@ -15,3 +15,7 @@ HW2 Q3 can be found in [here](https://bu-ie-582.github.io/fall18-ilkerkurtulus/f
 ## HW 3
 
 HW3 can be found in [here](https://bu-ie-582.github.io/fall18-ilkerkurtulus/files/homework3.html)
+
+## HW 4
+
+HW4 can be found in [here](https://bu-ie-582.github.io/fall18-ilkerkurtulus/files/homework4.html)

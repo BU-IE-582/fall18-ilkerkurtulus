@@ -1,0 +1,258 @@
+---
+title: "HW4"
+author: Ilker Kurtulus - IE582 - Fall 2018
+---
+```{r,echo=FALSE,results="hide"}
+library(knitr)
+opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+```
+
+```{r eval=TRUE, message=FALSE, warning=FALSE}
+library(data.table)
+library(dplyr)
+library(h2o)
+library(caret)
+library(glmnet)
+```
+
+A. Datasets:
+
+1) Student Performance: G3<10 class 0, G3>=10 class 1, binary classification with unbalanced class ratio. url: http://archive.ics.uci.edu/ml/datasets/Student+Performance
+```{r eval=TRUE}
+sp = read.csv("/Users/ilkerkurtulus/Documents/cse-master/ie582/data/hw4/student performance/student-por.csv", sep = ";")
+sp = as.data.table(sp)
+# drop g1, g2 predict g3 
+sp[, c("G1","G2"):=NULL]
+sp[, id:=seq(1,dim(sp)[1])]
+x = sp[, c("id","Mjob","Fjob","reason","guardian")]
+ohencodes = dcast(melt(x, id.vars='id'), id ~ variable + value, fun = length)
+df = sp[ohencodes, on = "id"]
+df[, c("Mjob","Fjob","reason","guardian","id"):=NULL]
+# ready to model
+df = mutate(df, class= ifelse(G3 < 10, 0, 1))
+df = as.data.table(df)
+df[, c("G3"):=NULL]
+df[, class := as.factor(df$class)]
+head(df)
+```
+
+```{r eval=TRUE}
+dim(df[class == 1])
+```
+
+```{r eval=TRUE}
+dim(df[class == 0])
+```
+
+2) Autism Adult Dataset, binary classification balanced class sizes.
+url: http://archive.ics.uci.edu/ml/datasets/Autism+Screening+Adult
+```{r eval=TRUE}
+ac = read.csv("/Users/ilkerkurtulus/Documents/cse-master/ie582/data/hw4/Autism-Adult-Data Plus Description File/Autism-Adult-Data.arff",comment.char = "@", header = FALSE)
+ac = as.data.table(ac)
+ac[,V11:= as.numeric(ac$V11)]
+# since V19 is dummy and V16, has 52 unique elements which may impact convergence of cost functions 
+ac[, c("V19","V16"):=NULL]
+# drop na (?)
+ac = ac[V13 != "?"]
+ac = ac[V20 != "?"]
+head(ac)
+```
+
+```{r eval=TRUE}
+dim(ac)
+```
+
+3) Multiclass classification problem with 3 classes. CTG Data.
+url: https://archive.ics.uci.edu/ml/datasets/cardiotocography
+
+```{r eval=TRUE}
+sa = read.csv("/Users/ilkerkurtulus/Documents/cse-master/ie582/data/hw4/CTG.csv")
+sa = as.data.table(sa)
+sa[, c("SegFile","FileName","Date","CLASS"):=NULL]
+# Dr Has 0 variance
+sa[, c("DR"):=NULL] 
+sa = na.omit(sa)
+dim(sa)
+head(sa)
+```
+
+4) Regression: Mashable Social Media popularity prediction with 39k observations and 61 features
+url: https://archive.ics.uci.edu/ml/datasets/online+news+popularity
+```{r eval=TRUE}
+op = read.csv("/Users/ilkerkurtulus/Documents/cse-master/ie582/data/hw4/OnlineNewsPopularity/OnlineNewsPopularity.csv")
+op = as.data.table(op)
+op[, c("timedelta","url"):=NULL]
+dim(op)
+head(op)
+```
+
+B. Model (hw Q3 included by comments section in this part)
+
+set.seed(1)
+
+parameter tuning with 10 fold cv and grid search
+```{r eval=TRUE}
+control <- trainControl(method="cv", number=10)
+# grid search
+glm_grid <- expand.grid(alpha = c(0,0.5,1), lambda = c(0,0.5,1))
+dt_grid <- expand.grid(cp = c(0,0.01,0.1))
+svmpoly_grid <- expand.grid(degree = c(2,3,4), C = c(0.01,1,100), scale = c(1,2))
+svmrad_grid <- expand.grid(C = c(0.01,1,100), sigma = c(0.1,1,10))
+rf_grid <- expand.grid(mtry = c(1:5))
+gbm_grid <- expand.grid(n.trees = c(10,50,100), shrinkage = c(0.01, 0.1), interaction.depth = c(5,10,20), n.minobsinnode = c(5,10,20))
+```
+
+a) Dataset 1 
+```{r eval=TRUE}
+# train test split
+trainIndex <- createDataPartition(df$class, p = .66, list = FALSE, times = 1)
+dfTrain <- df[ trainIndex,]
+dfTest  <- df[-trainIndex,]
+```
+
+```{r eval=TRUE, results = "hide"}
+glm_model <- train(class~., data=dfTrain, method="glmnet", trControl=control,tuneGrid=glm_grid) 
+dt_model <- train(class~., data=dfTrain, method="rpart", trControl=control,tuneGrid=dt_grid) 
+svmpoly_model <- train(class~., data=dfTrain, method="svmPoly", trControl=control,tuneGrid=svmpoly_grid) 
+svmrad_model <- train(class~., data=dfTrain, method="svmRadial", trControl=control,tuneGrid=svmrad_grid) 
+rf_model <- train(class~., data=dfTrain, method="rf", trControl=control,tuneGrid=rf_grid)
+gbm_model <- train(class~., data=dfTrain, method="gbm", trControl=control,tuneGrid=gbm_grid) 
+```
+
+
+```{r eval=TRUE}
+print(max(glm_model$results$Accuracy))
+print(max(dt_model$results$Accuracy))
+print(max(svmpoly_model$results$Accuracy))
+print(max(svmrad_model$results$Accuracy))
+print(max(rf_model$results$Accuracy))
+print(max(gbm_model$results$Accuracy))
+```
+
+Test Prediction Performance:
+```{r eval=TRUE}
+confusionMatrix(dfTest$class,predict(svmpoly_model, dfTest))
+```
+Comments:
+Test accuracy is close to training accuracy however it learns only one class so the model fails for the best model in training. Unbalanced class problem is still there. Stratified validation sets should have been used in training.
+
+b) Dataset 2
+```{r eval=TRUE}
+trainIndex <- createDataPartition(ac$V21, p = .66, list = FALSE, times = 1)
+acTrain <- ac[ trainIndex,]
+acTest  <- ac[-trainIndex,]
+```
+
+```{r eval=TRUE, results = "hide", warning=FALSE, message=FALSE}
+glm_model <- train(V21~., data=acTrain, method="glmnet", trControl=control,tuneGrid=glm_grid) 
+dt_model <- train(V21~., data=acTrain, method="rpart", trControl=control,tuneGrid=dt_grid) 
+svmpoly_model <- train(V21~., data=acTrain, method="svmPoly", trControl=control,tuneGrid=svmpoly_grid, scale = FALSE) 
+svmrad_model <- train(V21~., data=acTrain, method="svmRadial", trControl=control,tuneGrid=svmrad_grid, scale = FALSE) 
+rf_model <- train(V21~., data=acTrain, method="rf", trControl=control,tuneGrid=rf_grid) 
+gbm_model <- train(V21~., data=acTrain, method="gbm", trControl=control,tuneGrid=gbm_grid) 
+```
+
+```{r eval=TRUE}
+print(max(glm_model$results$Accuracy))
+print(max(dt_model$results$Accuracy))
+print(max(svmpoly_model$results$Accuracy))
+print(max(svmrad_model$results$Accuracy))
+print(max(rf_model$results$Accuracy))
+print(max(gbm_model$results$Accuracy))
+```
+
+Test Prediction Performance:
+
+```{r eval=TRUE}
+confusionMatrix(acTest$V21,predict(glm_model, acTest))
+```
+
+Comments:
+
+Both training and test accuracies are 1 which must be impossible. There must be an error during data read phase that results this kind of unfeasible situation.
+```{r eval=TRUE}
+plot(rf_model)
+```
+
+c) Dataset 3 
+```{r eval=TRUE}
+sa[,NSP:= as.factor(sa$NSP)]
+trainIndex <- createDataPartition(sa$NSP, p = .66, list = FALSE, times = 1)
+saTrain <- sa[ trainIndex,]
+saTest  <- sa[-trainIndex,]
+```
+
+```{r eval=TRUE, results="hide"}
+glm_model <- train(NSP~., data=saTrain, method="glmnet", trControl=control,tuneGrid=glm_grid,family = "multinomial") 
+dt_model <- train(NSP~., data=saTrain, method="rpart", trControl=control,tuneGrid=dt_grid)
+#svm doesnt run
+#svmpoly_model <- train(NSP~., data=saTrain, method="svmPoly", trControl=control,tuneGrid=svmpoly_grid,family = "multinomial") 
+#svmrad_model <- train(NSP~., data=saTrain, method="svmRadial", trControl=control,tuneGrid=svmrad_grid,family = "multinomial") 
+rf_model <- train(NSP~., data=saTrain, method="rf", trControl=control,tuneGrid=rf_grid,family = "multinomial") 
+gbm_model <- train(NSP~., data=saTrain, method="gbm", trControl=control,tuneGrid=gbm_grid)
+```
+
+```{r eval=TRUE}
+print(max(glm_model$results$Accuracy))
+print(max(dt_model$results$Accuracy))
+#print(max(svmpoly_model$results$Accuracy))
+#print(max(svmrad_model$results$Accuracy))
+print(max(rf_model$results$Accuracy))
+print(max(gbm_model$results$Accuracy))
+```
+
+Test Prediction Performance:
+
+```{r eval=TRUE}
+confusionMatrix(saTest$NSP,predict(glm_model, saTest))
+```
+
+Comments:
+SVM models are not working well in local pc. Multicore processing or higher memory may be needed if there is not a problem in parameter settings. 
+glm model works well. Both training and test predictions are good. There is no overfit we can say. 
+
+
+
+d) Dataset 4
+```{r eval=TRUE}
+trainIndex <- createDataPartition(op$shares, p = .66, list = FALSE, times = 1)
+opTrain <- op[ trainIndex,]
+opTest  <- op[-trainIndex,]
+```
+
+```{r eval=TRUE, results="hide"}
+glm_model <- train(shares~., data=opTrain, method="glmnet", trControl=control,tuneGrid=glm_grid,family = "gaussian") 
+dt_model <- train(shares~., data=opTrain, method="rpart", trControl=control,tuneGrid=dt_grid) 
+# svm doesnt run 
+# svmpoly_model <- train(shares~., data=opTrain, method="svmPoly", trControl=control,tuneGrid=svmpoly_grid,family = "gaussian") 
+# svmrad_model <- train(shares~., data=opTrain, method="svmRadial", trControl=control,tuneGrid=svmrad_grid,family = "gaussian") 
+# random forest and gbm also dont converge so i just skip this part.
+#rf_model <- train(shares~., data=opTrain, method="rf", trControl=control,tuneGrid=rf_grid,family = "gaussian") 
+#gbm_model <- train(shares~., data=opTrain, method="gbm", trControl=control,tuneGrid=gbm_grid) 
+```
+
+```{r eval=TRUE}
+print(min(glm_model$results$RMSE))
+print(min(dt_model$results$RMSE))
+#print(max(svmpoly_model$results$Accuracy))
+#print(max(svmrad_model$results$Accuracy))
+#print(max(rf_model$results$Accuracy))
+#print(max(gbm_model$results$Accuracy))
+```
+
+
+Test Prediction Performance:
+```{r eval=TRUE}
+RMSE(opTest$shares, predict(dt_model, opTest))
+```
+
+```{r eval=TRUE}
+dt_model
+```
+
+Comments:
+Test error rate 1.5 of the training error rate we can say there is overfitting a bit. By changing cp parameter we can find an optimal error balance however still RMSE is very high. Therefore before modelling we need to do feature engineering, scaling, pca or mds and feature selection methods (such as level1 or random forest feature importance). So far this model is not a good model and as we can see the whole cart model chaning parameter has no effect at all which also shows that we need to focus on our predictors.
+
+
+
+
