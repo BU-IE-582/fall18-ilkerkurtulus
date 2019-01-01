@@ -1,0 +1,108 @@
+---
+title: "HW5"
+author: Ilker Kurtulus - IE582 - Fall 2018
+---
+```{r,echo=FALSE,results="hide"}
+library(knitr)
+opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+```
+
+```{r eval=TRUE, message=FALSE, warning=FALSE}
+library(data.table)
+library(glmnet)
+library(cluster)
+```
+
+Read Data 
+```{r eval=TRUE}
+df = read.csv("/Users/ilkerkurtulus/Documents/cse-master/ie582/data/hw5/Musk1.csv")
+df = as.data.table(df)
+```
+
+Scaling Features
+```{r eval=TRUE}
+df = na.omit(df)
+ff = df[,3:dim(df)[2]] # features
+ff = as.data.table(scale(ff))
+```
+
+Computing Distances
+```{r eval=TRUE}
+euc = dist(ff, method = "euclidean")
+man = dist(ff, method = "manhattan")
+```
+
+Computing Agglomerative Coefficient: close to 1 is better.
+```{r eval=TRUE}
+cluster_similiarities =  c( "average", "single", "complete", "ward")
+for(i in 1:length(cluster_similiarities)){
+  print(agnes(euc, method = cluster_similiarities[i])$ac) 
+}
+```
+
+Ward's method is better for euclidian distance.
+```{r eval=TRUE}
+for(i in 1:length(cluster_similiarities)){
+  print(agnes(man, method = cluster_similiarities[i])$ac) 
+}
+```
+
+Similarly Ward's method is better for manhattan distance also.
+
+Following function takes algorithm type, number of clusters and distance type as parameters and then according to those parameters transform cluster center distance data to logistic regression model. Finally the function builds 10 fold cross validated binomial logistic regression and prints minimum mean cross validated error with lambda value with minimum cv error.
+
+```{r eval=TRUE}
+model_evaluation = function(cluster_num, kmeans = TRUE, distance_type){
+  set.seed(1)
+  k = cluster_num
+  if (distance_type == "manhattan") {
+    data = euc
+  } else {
+    data = man 
+  }
+  
+  if (kmeans) {
+    clusters = pam(data,k)[3]$clustering
+  } else {
+    clusters = cutree(agnes(data, method = "ward"), k = k)
+  }
+  
+  model = copy(ff)
+  model[, cluster:= clusters]
+  x_euc = model[, lapply(.SD, mean),by = cluster]
+  
+  distances = c()
+  for(j in 1:k){
+    for(i in 1:dim(model)[1]){
+      distances = c(distances, dist(rbind(model[i,1:166], x_euc[j,2:167]), method = distance_type)[1])
+    }
+  }
+  tr = as.data.table(matrix(distances, ncol = k, byrow = FALSE))
+  tr[,class:= as.factor(df$X1)]
+  glm_model = cv.glmnet(x = as.matrix(tr[,1:k]), y = as.factor(tr$class) , alpha = 1, nfolds = 10, family = "binomial", type.measure = "auc") 
+  result = c(min(glm_model$cvm),glm_model$lambda.min)
+  return(result)
+}
+```
+
+Finally we can compute model accuracy with auc in a loop for different parameters such that clustering algorith type, number of clusters and distance type as well as best lambda value.
+```{r eval=TRUE}
+clustering_alg = c(TRUE,FALSE)
+distances = c("manhattan", "euclidian")
+k_values = 2:15
+
+for(cls in clustering_alg){
+  for(dist in distances){
+    for(k in k_values){
+      print(paste(cls, dist, k))
+      print(model_evaluation(cluster_num = k, kmeans = cls, distance_type = dist))
+    }
+  }
+}
+```
+
+Minimum cross validated error occurs at below parameters:
+1) kmeans = False it means Hierarchical Clustering with Ward's Method for cluster similarity.
+2) distance = Euclidian distance
+3) number of clusters = 14 
+4) lambda value in logistic regression 0.002093864
