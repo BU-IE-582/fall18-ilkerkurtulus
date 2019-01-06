@@ -1,0 +1,406 @@
+---
+title: "Project"
+author: "Goksin Aydogan, Ilker Kurtulus"
+date: "6 Ocak 2019"
+output: html_document
+---
+
+```{r,echo=FALSE,results="hide"}
+library(knitr)
+opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+```
+
+```{r eval=TRUE, message=FALSE, warning=FALSE}
+library(data.table)
+library(anytime)
+library(stringr)
+library(dplyr)
+library(ggplot2)
+library(gbm)
+library(rpart)
+library(h2o)
+library(StatMeasures)
+library(zoo)
+library(caret)
+```
+
+1.INTRODUCTION
+
+The introduction part consists of 3 subparts: problem description, summary of the proposed approach and descriptive analysis of the given data.
+
+-Problem Description
+
+The aim of this project is to provide forecasts for 1x2 bets for England Premier League, meaning providing upcoming match results as home, tie, and away result probabilities. The further objective is to provide such advanced forecasts enough to draw away given bookmakers’ performances using the bookmakers’ odds data and other types of information such as home/away goal counts, home/away win rates and their ratios such as ratio of home goals and away goals of last three matches.
+Furthermore, this projects aims to improve the forecast results from one submission to another by improving the model used. As programming language “R” is used.
+
+-Summary of the Proposed Approach
+
+The problem is taken as a multiclass classification problem (3 classes -home,tie,win-) and some features are taken as useful and used in them model in order to get more accurate results. In the process, glm, random forest and gbm methods are used. Further information is given in the “Approach” Section.
+
+-Descriptive Analysis of the Given Data
+
+For this project there are two data files are given: one file for past match results and one file for bookmakers’ odd details. This data files are kept updating during the project process due to new information being added after each game that has been played already. Moreover, since the data files are provided as “Rmd” files they are observed after read in “RStudio” which is an open source IDE (integrated development environment) for R used in project.
+First past match results data is examined. This data consists of over 3000 observations and 7 variables. First variable refers to “league ID’s” and since the focus area of this project is England Premier League, all league ID’s are identical; hence, this variable provides no significant information for the model and can be eliminated in process. Furthermore, because seventh variable shows the match “type” as “soccer” for all of the observations, this variable provides no significant information for the model as well, due to the same reason. The second variable keeps the information of “match ID’s” helping discriminate matches from each other by assigning them some ID values. This variable is very useful to keep track of match details and it is observed that same match ID values are used if the home and away team is the same –the dates; hence the scores can differ-. Next two variables –the third and fourth variables- give the information of “home” and “away” football teams’ names for each specific game, respectively. Moreover, fifth variable provides actual scores of the matches. The scores are provided as “x:y” where x being the score of home team and y being the score of away team –so x and y variables are numbers-. This means if “x” is greater than “y”, it is home win; if “x” is smaller than “y”, it is away win; and if “x” is equal to “y”, it is a tie. For the sake of our model these variables should be further treated as so in order to keep the home win, tie or away win information. It is also noted that scores of some games are left as “N/A” –missing values-, basically because they have not been played yet. Other than that there are no missing values in the match results data. Finally, the sixth variable gives the date of each game played to make further inferences such as its chronological placement.
+Next, the odds data is taken under examination. This data is larger than the other data in terms of observations it consist of, which is over 7 million with 7 variables. The first variable indicates the “match ID’s”, which has the same logic as in the match details data and they align with each other, meaning in both data if the match ID’s are the same they refer to the same match in terms of the home and away teams that are playing –the date can be differ-. The second variable refers to the bet type and there are 6 different bet types provided which are 1x2, asian handicap (ah), both teams to score (bts), double chance (dc), home-away (ha) and over-under (ou). All types of bets will be further taken into account when creating the model if they are below the chosen threshold of missing values percentage. Furthermore, the third variable indicates the odd types and there can be several odd types according to the given bet types.
+The fourth variable keeps the information of bookmakers that give the odds. In this data, 27 different bookmakers are provided which are: 10Bet, 12BET, 188BET, bet-at-home, bet365, Betclic, Betsafe, Betsson, BetVictor, Betway, bwin, ComeOn, Expekt, Interwetten, mybet, Paddy Power, Pinnacle, SBOBET, Sportingbet, Tipico, Unibet, William Hill, youwin, 1xBet, 888sport, Betfair and Betfair Exchange. The fifth variable gives the information of the match dates –the same logic as in the match results data-. The sixth variable finally gives the odd values for each observation, whereas the seventh variable gives the total handicap values. 
+Furthermore, it is observed that there are several observations for same match ID’s in the “odds details” data because the date of the match can differ, the bookmakers differ, the bet type may differ and even the odds may differ (the bookmakers may give more than one odd in reality).
+It is also observed that odds details data is more comprehensive than matches data in terms of including unique match ID’s. This is actually a convenient thing because it means that for each match that will be further examined, there is at least one odds detail about it.
+Last but not least, odds details data have some N/A values in it but only under total handicap variable, for example for bet type 1x2 there is no need of total handicap value; hence these cells are missing (N/A). To further manipulate the data those missing values should be eliminated. 
+
+
+2.RELATED LITERATURE
+
+
+A comprehensive literature search is performed during this project in order to further improve the model used in this process.
+Here are some topics of literature search and their references are given in the references section:
+
+Betting modelling research:
+Analysis of useful parameters: [1], [2]
+General concept of parameters that is useful for the 1x2 betting model: 1x2 (Outcome of the game)
+points
+games with similar opponents
+last games
+home & away games
+other quantifiable factors (weather, pitch, presence and absence of certain players)
+
+Further specific parameters of current season matches to be used in betting models (results and % of points):
+all matches
+all matches at home/away
+last 6 matches
+last 3 matches at home/away
+all goals
+all goals at home/away
+goals at last 6 matches
+goals at last 3 matches at home/away
+matches between both teams at last 3 years
+matches vs similar opponents
+injured and disqualified players
+
+
+The concept of “Predicting Football Using R”: [3]
+
+It is observed that the odds of bookmakers often reflect the market rather than the true probabilities. For example, when there is “Galatasaray” is playing in a big game, bookmakers uses the “Galatasaray” fans’ sympathy and knows that people will bet more for team winning in order to make more money out of the situation – which is a very smart move of bookmakers but due to that odds get far from reality.-
+For multiclass classification research, gbm, random forest and logistic regression in R concepts are searched. Related R functions are used. The function usages can be found on the website rdocumentation.org
+
+3.APPROACH
+
+The problem is considered as a multiclass classification such that classes are -1 (home win), 0 (tie) and 1 (away win). By using dcast function, every combination of bettype, oddtype, handicap and bookmaker are obtained in terms of average odds ratio by matchId. Example : 1x2_NA_Betway_oddX which states that 1x2 bettype, X oddtype (tie) and NA handicap which is natural result since there is no handicap for 1x2. 
+Hundreds of features are generated in this way and then many of the columns dropped if they have null values in matches to be predicted in the submission. Additional to that last 3 match characteristics are also added as features for both home and away team such that home_last_3_match_win_rate, away_last_3_match_goal. At win_rate calculation, won counts as 1, tie counts as 0.5 and lost counts as 0 and finally sum of last 3 matches calculated by 3 to get average. 
+Firstly, h2o packaged are used for parallel computing, however caret packages is choosed for algorithms later due to its easy to use hyperparameter tuning feature. Logistic Regression, Random Forest and Gradient Boosting algorithms are used for classification. Parameters are tuned via 10 fold cross validation. After parameter selection, model selection is done based on RPS scores for all algorithms.
+
+Performance measure:
+
+Ranked Probability Score (RPS) is used in this project as performance measure. This measures the performance of forecasts given as probability distributions in terms of closeness to observed outcomes. is a measure of how good forecasts, expressed as probability distributions, match with observed outcomes. Two main feature of forecasts are taken into account using this method as well, which are: location and spread of forecasts. RPS can get values from 0 to 1 which 1 is the worst result. This means if RPS value is small the prediction is better. 
+
+
+4.RESULTS
+
+(Actually we have made 6 different submissions but somehow 1 is eliminated, therefore we are going to talk about 5 submissions)
+
+Submission 1:
+
+  [1] "matchId"               "1x2_NA_10Bet_odd1"     "1x2_NA_10Bet_odd2"    
+ [4] "1x2_NA_10Bet_oddX"     "1x2_NA_BetVictor_odd1" "1x2_NA_BetVictor_odd2"
+ [7] "1x2_NA_BetVictor_oddX" "1x2_NA_Betclic_odd1"   "1x2_NA_Betclic_odd2"  
+[10] "1x2_NA_Betclic_oddX"   "1x2_NA_Betway_odd1"    "1x2_NA_Betway_odd2"   
+[13] "1x2_NA_Betway_oddX"    "dc_NA_10Bet_12"        "dc_NA_10Bet_1X"       
+[16] "dc_NA_10Bet_X2"        "dc_NA_BetVictor_12"    "dc_NA_BetVictor_1X"   
+[19] "dc_NA_BetVictor_X2"    "dc_NA_Betclic_12"      "dc_NA_Betclic_1X"     
+[22] "dc_NA_Betclic_X2"      "dc_NA_Betway_12"       "dc_NA_Betway_1X"      
+[25] "dc_NA_Betway_X2"       "ha_NA_BetVictor_1"     "ha_NA_BetVictor_2"    
+[28] "ha_NA_Betway_1"        "ha_NA_Betway_2"        "class.x"              
+[31] "home_last_3_goals"     "away_last_3_goals"     "ratio_last_3_goals"   
+[34] "home_last_3_win_rate"  "away_last_3_win_rate"  "ratio_last_3_win_rate"
+machine learning is made through library “h20”. Gbm and randomforest functions are used for training and  is made with 10-fold cross validation. Random forest mean cross validation accuracy result was .525, where as it was .526 for gbm. Feature selection is made by random forest function. The features that have significance values are used. That is how the mean cross-validation error has decreased to 0.5. Therefore, all features further used in gbm for forecasting estimations.
+gbm parameters:
+: h2ogbm = h2o.gbm(x = fts[! fts %in% rv], y = "class.x", training_frame = h_train, nfolds = 10, ntrees = 500, max_depth = 10, learn_rate = 0.01, distribution = "multinomial",seed = 5)
+rf parameters: 
+h2o_randomForest = h2o.randomForest(x = fts[! fts %in% rv], y = "class.x", training_frame = h_train, nfolds = 10,fold_assignment = "Stratified",ntrees = 100, max_depth = 20, distribution = "multinomial")
+Finally the estimations for game results are forecasted. No parameter tuning is performed and success criteria is taken as accuracy.
+
+Submission 2:
+
+Some improvements are performed in null in columns. All columns that include null values are eliminated from the data while training the data. Before this improvement, the model has given some null values. Now, it does not.
+Furthermore, as a further improvement, in this model train and test sets are splitted by some proper fraction using h2o as machine learning package. Using random forest and gbm models, 10-fold cross validations are performed with different parameters. Model selection is made based RPS scores. The parameter set that gives the lowest RPS results is used in the submission model and estimations are provided. 
+
+gbm parameters:
+
+h2ogbm = h2o.gbm(x = fts[! fts %in% rv], y = "class", training_frame = h2o_train, nfolds = 10,
+                 ntrees = 500, max_depth = 10, learn_rate = 0.01, distribution = "multinomial",
+                 seed = 5)
+
+gbm score: 0.1314525
+
+random forest parameters:
+
+h2o_randomForest = h2o.randomForest(x = fts[! fts %in% rv], y = "class", training_frame = h2o_train, nfolds = 10,
+                                    fold_assignment = "Stratified",
+                                    ntrees = 100, max_depth = 20, distribution = "multinomial")
+
+random forest score: 0.1303804
+
+Submission 3:
+
+On this week grid search method is started being used in this project. Therefore, package “caret” is defined in R and h2o package is not used anymore. Furthermore, so far gbm and random forests methods are used but from now on logistic regression is started being used. Hyperparameters used in grid search are following.
+
+glm_grid <- expand.grid(alpha = c(0,0.5,1), lambda = c(0,0.5,1))
+
+rf_grid <- expand.grid(mtry = c(1:5))
+
+gbm_grid <- expand.grid(n.trees = c(10,50,100), shrinkage = c(0.01, 0.1), interaction.depth = c(5,10,20), n.minobsinnode = c(5,10,20))
+
+Then best parameters set is found by 10-fold cross validation and match results are forecasted. The RPS results with chosen parameter set and the best model is following.
+
+-mean(res_glm$rps) = 0.1275
+
+-mean(res_rf$rps) = 0.1260
+
+-mean(res_gbm$rps) = 0.1285
+
+Since the minimum value is obtained through random forest, new match results are forecasted through random forest and chosen parameters.
+
+Submission 4:
+
+Although, parameter selection improvements are performed, the results of RPS were not better for this submission:
+
+-mean(res_glm$rps) = 0.1288154
+
+-mean(res_rf$rps) = 0.1273244
+
+-mean(res_gbm$rps) = 0.1346641
+
+Again, since the minimum value is obtained through random forest, new match results are forecasted through random forest and chosen parameters.
+
+Submission 5:
+
+Same model is used. The results are following.
+
+-mean(res_glm$rps) = 0.1290159
+
+-mean(res_rf$rps) = 0.1273401
+
+-mean(res_gbm$rps) = 0.1331631
+
+It is observed that random forest is the best method for this project, hence it is further used in the model.
+
+
+5.CONCLUSIONS AND FRAME WORK
+
+
+The approach was taken this problem as 3-class classification problem. The model is made from scratch and further improved in every submission. First the literature search is made and useful parameters are extracted for the model. 2 big machine learning packages are used: h2o and caret. 3 main methods are used: randomforest, glm and gbm. From the results it is observed that random forest model is the best one for the model and parameter selections.
+
+The model can be improved further. For example, used model does not account for teams’ motivation, e.g. playing for a draw. Other parameters can be included to improve accuracy such as weather, injuries etc.. This will create the need of combining with an effective staking strategy, though. Furthermore, changes in odds are expected to improve the model, as well. Moreover, although this project approached the problem as a multiple classification problem; since there are 3 classes as home win, tie and away win, it could decrease the RPS value results further if the problem would be taken as ordinal regression problem for the sake of forecast improvement due to the nature of the target class. In other words, if home team holds the advantage of winning, the game score should be even first –tie- in order the second team to take the advantage of winning and vice versa; ordinality nature could be further used.
+
+REFERENCES
+
+
+
+[1]
+Betting	Expert,	"Predict	Football	Matches,"	2018.	[Online].	Available: https://www.bettingexpert.com/how-to/predict-football-matches#prediction1.
+
+[2]
+D. Loftus, "What is the technique to predict a football match result?," Quora, [Online]. Available: https://www.quora.com/What-is-the-technique-to-predict-a-football-match-result. [Accessed 2018].
+
+[3]
+M. Eastwood, Writer, Predicting Football Results with Statistical Modelling. [Performance]. 2014.
+
+[4]
+D. Sheehan, "Predicting Football Results With Statistical Modelling," Github, [Online]. Available: https://dashee87.github.io/data%20science/football/r/predicting-football-results- with-statistical-modelling/. [Accessed 2018].
+[5]
+K. Kiwango, "Predicting English Premier League match results using Machine Learning," Rpubs, [Online]. Available: https://rpubs.com/iamkk11/319313. [Accessed 2018].
+
+[6]
+dashee87, "2017-05-30-predicting-football-results-with-statistical-modelling.R," Github, [Online]. Available: https://github.com/dashee87/blogScripts/blob/master/R/2017-05-30- predicting-football-results-with-statistical-modelling.R. [Accessed 2018].
+
+[7]
+Wingfeet, "Football Predictisons Display," R-bloggers, [Online]. Available: https://www.r- bloggers.com/football-predictions-display/. [Accessed 2018].
+
+[8]
+"The Dixon-Coles model for predicting football matches in R," opisthokonta.net, [Online]. Available: https://opisthokonta.net/?p=890. [Accessed 2018].
+
+[9]
+L. E. Kroll, "Predictions for the Fifa World Cup 2018 using R," Kaggle, [Online]. Available: https://www.kaggle.com/lekroll/predictions-for-the-fifa-world-cup-2018-using-r. [Accessed 2018].
+
+[10]
+"Match	Outcome	Prediction	in	Football,"	Kaggle,	[Online].	Available: https://www.kaggle.com/airback/match-outcome-prediction-in-football. [Accessed 2018].
+
+
+6.CODE
+
+
+The model is provided below.
+
+Read Data
+```{r eval=TRUE}
+po = readRDS("/Users/ilkerkurtulus/Documents/cse-master/ie582/data/final_project/odds_report.rds")
+pm = readRDS("/Users/ilkerkurtulus/Documents/cse-master/ie582/data/final_project/matches_report.rds")
+po = data.table(po)
+pm = data.table(pm)
+```
+
+Modify date format
+```{r eval=TRUE}
+po$date = anytime(po$date)
+pm$date = anytime(pm$date)
+```
+
+Assign class labels
+```{r eval=TRUE}
+pm = pm[, c("home_goal", "away_goal") := tstrsplit(score, ":", fixed=TRUE)]
+pm$home_goal = as.numeric(pm$home_goal)
+pm$away_goal = as.numeric(pm$away_goal)
+pml = mutate(pm, class= ifelse(home_goal > away_goal,-1, ifelse(home_goal == away_goal, 0, 1)))
+pml = data.table(pml)
+labels = pml[,c("matchId","class")]
+```
+
+Last three match statistics
+```{r eval=TRUE}
+df = copy(pml)
+df[, c("leagueId","score","type"):=NULL]
+df = mutate(df, is_home= ifelse(home_goal > away_goal,1, ifelse(home_goal == away_goal, 0.5, 0)))
+df = as.data.table(df)
+df = mutate(df, is_away= ifelse(home_goal > away_goal,0, ifelse(home_goal == away_goal, 0.5, 1)))
+df = as.data.table(df)
+df[, home_last_3_goals:=rollmeanr(shift((home_goal),1), k = 3, fill = NA), by = (home)]
+df[, away_last_3_goals:=rollmeanr(shift((away_goal),1), k = 3, fill = NA), by = (away)]
+df[,ratio_last_3_goals:=home_last_3_goals/away_last_3_goals]
+df[, home_last_3_win_rate:=rollmeanr(shift((is_home),1), k = 3, fill = NA), by = (home)]
+df[, away_last_3_win_rate:=rollmeanr(shift((is_away),1), k = 3, fill = NA), by = (away)]
+df[,ratio_last_3_win_rate:=home_last_3_win_rate/away_last_3_win_rate]
+```
+
+Generating odd features
+```{r eval=TRUE}
+bet_data = dcast(po, matchId ~ betType + totalhandicap + bookmaker + oddtype, value.var = "odd", fun = mean)
+bet_data = as.data.table(bet_data)
+```
+
+Merging features
+```{r eval=TRUE}
+df_features = df[, c("matchId","class","home_last_3_goals","away_last_3_goals","ratio_last_3_goals","home_last_3_win_rate","away_last_3_win_rate","ratio_last_3_win_rate")]
+setkey(bet_data, matchId)
+setkey(df_features, matchId)
+feature_data = bet_data[df_features, nomatch=0]
+```
+
+Matches to be predicted
+```{r eval=TRUE}
+pred_ids = df[df[,(date > anytime("2018-12-31")) & (date < anytime("2019-01-04"))]]$matchId
+bet_pred_data = feature_data[matchId  %in% pred_ids]
+bet_train_data = feature_data[!matchId  %in% pred_ids]
+```
+
+Drop null columns that have na's in predict set.
+```{r eval=TRUE}
+NaCountsOfCols <- sapply(bet_pred_data, function (x){length(x[is.na(x)])})
+Threshold <- 1
+ColumnsToDrop <- names(NaCountsOfCols[NaCountsOfCols>Threshold])
+bet_pred_data[,(ColumnsToDrop):=NULL]
+features = names(bet_pred_data)
+```
+
+Handling nulls in training set
+```{r eval=TRUE}
+bet_train_data = bet_train_data[, ..features]
+
+NaCountsOfCols <- sapply(bet_train_data, function (x){length(x[is.na(x)])})
+Threshold <- length(bet_train_data)*0.05
+ColumnsToDrop <- names(NaCountsOfCols[NaCountsOfCols>Threshold])
+bet_train_data[,(ColumnsToDrop):=NULL]
+train_features = names(bet_train_data)
+bet_train_data = bet_train_data[, ..train_features]
+bet_pred_data = bet_pred_data[, ..train_features]
+bet_train_data = bet_train_data[labels]
+bet_train_data = na.omit(bet_train_data)
+```
+
+Scaling
+```{r eval=TRUE}
+scaler = preProcess(bet_train_data[,2:49], method = c("center", "scale"))
+train = predict(scaler, bet_train_data[,2:49])
+train[, class:= bet_train_data$class]
+train[, matchId:= bet_train_data$matchId]
+pred = predict(scaler, bet_pred_data[,2:49])
+pred[, matchId:= bet_pred_data$matchId]
+```
+
+Split train & test sets
+```{r eval=TRUE}
+set.seed(1)
+trainIndex <- createDataPartition(train$class, p = .7, list = FALSE, times = 1)
+dfTrain <- train[ trainIndex,]
+dfTest  <- train[-trainIndex,]
+```
+
+10 fold cross validation
+```{r eval=TRUE}
+control <- trainControl(method="cv", number=10)
+```
+
+Grid Search
+```{r eval=TRUE}
+glm_grid <- expand.grid(alpha = c(0,0.5,1), lambda = c(0,0.5,1))
+rf_grid <- expand.grid(mtry = c(1:5))
+gbm_grid <- expand.grid(n.trees = c(10,50,100), shrinkage = c(0.01, 0.1), interaction.depth = c(5,10,20), n.minobsinnode = c(5,10,20))
+```
+
+
+```{r eval=TRUE}
+saTrain = dfTrain[, 1:49]
+saTrain = saTrain[, class:= as.factor(saTrain$class)]
+```
+
+Model with parameter tuning
+```{r eval=TRUE, echo = TRUE, results = "hide"}
+glm_model <- train(class~., data=saTrain, method="glmnet", trControl=control,tuneGrid=glm_grid,family = "multinomial") 
+rf_model <- train(class~., data=saTrain, method="rf", trControl=control,tuneGrid=rf_grid,family = "multinomial") 
+gbm_model <- train(class~., data=saTrain, method="gbm", trControl=control,tuneGrid=gbm_grid)
+```
+
+Logistic Regression Test Results
+```{r eval=TRUE}
+res_glm = as.data.table(predict(glm_model,dfTest, type = "prob"))
+res_glm[, class:= dfTest$class]
+names(res_glm) = c("p0","p1","p2", "class")
+res_glm = mutate(res_glm, e0= ifelse(class == -1,1,0))
+res_glm = mutate(res_glm, e1= ifelse(class == 0,1,0))
+res_glm = mutate(res_glm, e2= ifelse(class == 1,1,0))
+res_glm = as.data.table(res_glm)
+res_glm[,rps:=(((p0-e0)^2) + ((p0 + p1-e0-e1)^2) +  ((p0 + p1 + p2 -e0-e1-e2)^2))/3]
+mean(res_glm$rps)
+```
+
+Random Forest Test Results
+```{r eval=TRUE}
+res_rf = as.data.table(predict(rf_model,dfTest, type = "prob"))
+res_rf[, class:= dfTest$class]
+names(res_rf) = c("p0","p1","p2", "class")
+res_rf = mutate(res_rf, e0= ifelse(class == -1,1,0))
+res_rf = mutate(res_rf, e1= ifelse(class == 0,1,0))
+res_rf = mutate(res_rf, e2= ifelse(class == 1,1,0))
+res_rf = as.data.table(res_rf)
+res_rf[,rps:=(((p0-e0)^2) + ((p0 + p1-e0-e1)^2) +  ((p0 + p1 + p2 -e0-e1-e2)^2))/3]
+mean(res_rf$rps)
+```
+
+Gradient Boosting Test Results
+```{r eval=TRUE}
+res_gbm = as.data.table(predict(gbm_model,dfTest, type = "prob"))
+res_gbm[, class:= dfTest$class]
+names(res_gbm) = c("p0","p1","p2", "class")
+res_gbm = mutate(res_gbm, e0= ifelse(class == -1,1,0))
+res_gbm = mutate(res_gbm, e1= ifelse(class == 0,1,0))
+res_gbm = mutate(res_gbm, e2= ifelse(class == 1,1,0))
+res_gbm = as.data.table(res_gbm)
+res_gbm[,rps:=(((p0-e0)^2) + ((p0 + p1-e0-e1)^2) +  ((p0 + p1 + p2 -e0-e1-e2)^2))/3]
+mean(res_gbm$rps)
+```
+
+
+Predict New Matches
+```{r eval=TRUE}
+pred_rf = as.data.table(predict(rf_model,pred, type = "prob"))
+pred_rf[, matchId := pred$matchId]
+pred_rf
+```
