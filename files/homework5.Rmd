@@ -56,9 +56,9 @@ model_evaluation = function(cluster_num, kmeans = TRUE, distance_type){
   set.seed(1)
   k = cluster_num
   if (distance_type == "manhattan") {
-    data = euc
+    data = man
   } else {
-    data = man 
+    data = euc 
   }
   
   if (kmeans) {
@@ -102,7 +102,7 @@ for(cls in clustering_alg){
 ```
 
 Minimum cross validated error occurs at below parameters:
-1) kmeans = False it means Hierarchical Clustering with Ward's Method for cluster similarity.
-2) distance = Euclidian distance
-3) number of clusters = 14 
-4) lambda value in logistic regression 0.002093864
+-kmeans = TRUE it means KMedoids is gonna be used. k=13
+-distance = Euclidian distance
+-number of clusters = 13
+-lambda value in logistic regression 0.001198186
